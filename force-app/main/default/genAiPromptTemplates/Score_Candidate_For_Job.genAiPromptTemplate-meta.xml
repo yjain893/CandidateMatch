@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Scores a candidate against a job on skills, experience, fit and education and returns JSON.</description>
+    <developerName>Score_Candidate_For_Job</developerName>
+    <masterLabel>Score Candidate For Job</masterLabel>
+    <templateVersions>
+        <content>You are an objective recruiting assistant. Compare the candidate to the job using ONLY the information below.
+
+JOB (description plus structured requirements):
+{!$Input:Job_Description}
+
+CANDIDATE (resume profile plus city, work modes, role types, expected salary, experience):
+{!$Input:Candidate_Profile}
+
+Return ONLY one valid JSON object, no markdown:
+{
+  "skillsScore": 0-100,
+  "experienceScore": 0-100,
+  "fitScore": 0-100,
+  "educationScore": 0-100,
+  "matchedSkills": ["..."],
+  "missingSkills": ["..."],
+  "fitNote": "one short sentence",
+  "reasoning": "max 3 sentences"
+}
+
+How to score each part:
+- skillsScore: share of REQUIRED skills the candidate clearly shows, with some credit for nice-to-have skills and close equivalents.
+- experienceScore: how relevant the employment history is. Compare the candidate's roles and responsibilities, seniority and total years
+  with the job's role and minimum experience.
+- fitScore: practical fit using only the details the JOB specifies:
+    city (same city = full credit), work modes (any overlap = good), role types (any overlap = good),
+    salary (candidate's expected salary at or below the salary offered = good, above = poor).
+  If the candidate's value for a detail is "unknown", give about half credit for that detail. Ignore details the job does not specify.
+- educationScore: relevance of degrees / certifications to the role. If the job does not ask for any, use 70.
+Rules:
+- matchedSkills must be skills written in the candidate profile, using the profile's own wording. Never list a skill you cannot find there.
+- missingSkills are requirements from the job that the profile does not show.
+- Ignore gender, age, ethnicity, nationality and every other protected trait.
+- Do not assume anything that is not written.</content>
+        <inputs>
+            <apiName>Job_Description</apiName>
+            <definition>primitive://String</definition>
+            <description>Job text with structured requirements</description>
+            <masterLabel>Job Description</masterLabel>
+            <referenceName>Input:Job_Description</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>Candidate_Profile</apiName>
+            <definition>primitive://String</definition>
+            <description>Candidate profile text</description>
+            <masterLabel>Candidate Profile</masterLabel>
+            <referenceName>Input:Candidate_Profile</referenceName>
+            <required>true</required>
+        </inputs>
+        <status>Draft</status>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

@@ -1,0 +1,8 @@
+.filters {
+    border-right: 1px solid var(--slds-g-color-border-base-1, #c9c9c9);
+    padding-right: 1rem;
+}
+.table-wrap {
+    max-height: 70vh;
+    overflow: auto;
+}

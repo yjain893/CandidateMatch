@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Reads a PDF resume and returns skills, education and employment (with role) as JSON.</description>
+    <developerName>Parse_Resume</developerName>
+    <masterLabel>Parse Resume</masterLabel>
+    <templateVersions>
+        <content>You are a resume parsing engine. Read the attached resume: {!$Input:Resume}
+
+Return ONLY one valid JSON object. No markdown, no commentary. Use exactly this shape:
+
+{
+  "summary": "2-3 sentence professional summary, without the candidate's name",
+  "confidence": "high | medium | low  (low if the PDF is scanned, garbled, partial or not a resume)",
+  "skills": [{"name": "Java", "years": 5}],
+  "education": [{"institution": "", "degree": "", "fieldOfStudy": "", "startDate": "YYYY-MM-DD or YYYY-MM or YYYY or null", "endDate": "same format or null"}],
+  "employment": [{"employer": "", "role": "", "startDate": "same format", "endDate": null, "description": "max 400 characters"}]
+}
+
+Rules:
+- Extract ONLY what is explicitly written in the resume. Never guess or invent. Use null when unknown.
+- employment: one entry per job. "role" is the position the candidate held at that employer (e.g. "Senior Salesforce Developer"). If the same employer
+  appears with several roles, create one entry per role.
+- skills: individual technologies, tools, languages, methods and certifications as short canonical names
+  (e.g. "Salesforce", "Apex", "SQL", "Project Management"). Maximum 40. "years" only if stated or clearly derivable from dates, else null.
+- endDate is null for a current role.
+- Set confidence to low whenever you could not read the document reliably. Prefer fewer correct items over many doubtful ones.
+- Do NOT output the candidate's name, address, phone, email, age, gender, nationality, photo or any other personal data.</content>
+        <inputs>
+            <apiName>Resume</apiName>
+            <definition>SOBJECT://ContentDocument</definition>
+            <description>Resume PDF file</description>
+            <masterLabel>Resume</masterLabel>
+            <referenceName>Input:Resume</referenceName>
+            <required>true</required>
+        </inputs>
+        <status>Draft</status>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

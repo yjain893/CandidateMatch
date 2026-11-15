@@ -1,0 +1,82 @@
+<template>
+    <lightning-card title="Candidate Matcher" icon-name="standard:search">
+        <div class="slds-grid slds-gutters slds-p-horizontal_medium slds-p-bottom_medium">
+
+            <!-- Left: filters -->
+            <div class="slds-col slds-size_1-of-4 filters">
+                <lightning-record-picker
+                    label="Job"
+                    placeholder="Search jobs..."
+                    object-api-name="Job__c"
+                    onchange={handleJobChange}>
+                </lightning-record-picker>
+
+                <div class="slds-m-top_small">
+                    <lightning-checkbox-group
+                        name="workModes"
+                        label="Work mode"
+                        options={workModeOptions}
+                        value={workModes}
+                        onchange={handleWorkModes}>
+                    </lightning-checkbox-group>
+                </div>
+
+                <lightning-input
+                    label="City (comma separated for several)"
+                    value={cities}
+                    onchange={handleCities}>
+                </lightning-input>
+
+                <lightning-input
+                    type="number"
+                    label="Max expected salary"
+                    value={maxSalary}
+                    onchange={handleSalary}>
+                </lightning-input>
+
+                <div class="slds-m-top_small">
+                    <lightning-dual-listbox
+                        name="roles"
+                        label="Role types"
+                        source-label="Available"
+                        selected-label="Selected"
+                        options={roleOptions}
+                        value={roles}
+                        size="5"
+                        onchange={handleRoles}>
+                    </lightning-dual-listbox>
+                </div>
+
+                <div class="slds-m-top_medium">
+                    <lightning-button variant="brand" label="Apply filters" onclick={handleApply} disabled={applyDisabled}></lightning-button>
+                    <lightning-button class="slds-m-left_x-small" label="Clear" onclick={handleClear}></lightning-button>
+                </div>
+            </div>
+
+            <!-- Right: results -->
+            <div class="slds-col slds-size_3-of-4">
+                <template if:true={busy}>
+                    <lightning-spinner alternative-text="Working" size="small"></lightning-spinner>
+                </template>
+                <template if:true={summary}>
+                    <p class="slds-text-heading_small slds-m-bottom_x-small">{summary}</p>
+                    <p class="slds-text-color_weak slds-m-bottom_small">{startNote}</p>
+                </template>
+                <template if:true={hasRows}>
+                    <div class="table-wrap">
+                        <lightning-datatable
+                            key-field="contactId"
+                            data={rows}
+                            columns={columns}
+                            hide-checkbox-column
+                            wrap-text-max-lines="8">
+                        </lightning-datatable>
+                    </div>
+                </template>
+                <template if:false={hasRows}>
+                    <p class="slds-text-color_weak">Pick a job, adjust the filters if you like, then click Apply filters.</p>
+                </template>
+            </div>
+        </div>
+    </lightning-card>
+</template>
