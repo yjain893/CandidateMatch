@@ -536,7 +536,7 @@ export default class CandidateMatcherV2 extends NavigationMixin(LightningElement
                 best = r;
             }
         });
-        return best ? `${best.name} ${Math.round(best.score)}` : '-';
+        return best ? best.name : '-';
     }
 
     handleSearch(event) {
