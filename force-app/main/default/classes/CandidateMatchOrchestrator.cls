@@ -146,8 +146,7 @@ public with sharing class CandidateMatchOrchestrator {
         if (toScore.isEmpty()) { return res; }
 
         // 4) Score in the background
-        if (CandidateMatchService.usesAiJobRun()) { CandidateMatchService.submitScoring(jobId, toScore); }
-        else { Database.executeBatch(new DirectScoreBatch(res.runKey), 2); }
+        Database.executeBatch(new DirectScoreBatch(res.runKey), 2);
         return res;
     }
 }

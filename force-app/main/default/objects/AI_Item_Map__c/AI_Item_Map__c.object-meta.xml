@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
-    <label>AI Item Map</label>
-    <pluralLabel>AI Item Maps</pluralLabel>
-    <nameField><label>Map Number</label><type>AutoNumber</type><displayFormat>AIM-{000000}</displayFormat><startingNumber>1</startingNumber></nameField>
-    <deploymentStatus>Deployed</deploymentStatus>
-    <sharingModel>ReadWrite</sharingModel>
-    <enableReports>true</enableReports>
-</CustomObject>

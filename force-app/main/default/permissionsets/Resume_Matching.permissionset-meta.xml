@@ -1,33 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
-    <classAccesses><apexClass>AiJobGateway</apexClass><enabled>true</enabled></classAccesses>
-    <classAccesses><apexClass>AiJobResultBatch</apexClass><enabled>true</enabled></classAccesses>
-    <classAccesses><apexClass>AiJobResultService</apexClass><enabled>true</enabled></classAccesses>
-    <classAccesses><apexClass>AiJobRunEventHandler</apexClass><enabled>true</enabled></classAccesses>
-    <classAccesses><apexClass>AiJobSweeper</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>CandidateMatchOrchestrator</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>CandidateMatchService</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>CandidateMatcherController</apexClass><enabled>true</enabled></classAccesses>
-    <classAccesses><apexClass>DirectParseBatch</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>DirectScoreBatch</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>JobRequirementsService</apexClass><enabled>true</enabled></classAccesses>
-    <classAccesses><apexClass>MatchRequestAction</apexClass><enabled>true</enabled></classAccesses>
-    <classAccesses><apexClass>MatchResultsAction</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>PromptRunner</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>ResumeBackfillBatch</apexClass><enabled>true</enabled></classAccesses>
-    <classAccesses><apexClass>ResumeJobService</apexClass><enabled>true</enabled></classAccesses>
-    <classAccesses><apexClass>ResumeJobStarterBatch</apexClass><enabled>true</enabled></classAccesses>
-    <classAccesses><apexClass>ResumeParseAction</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>ResumeParseBatch</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>ResumeParseScheduler</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>ResumeParserService</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>ResumeQueueHandler</apexClass><enabled>true</enabled></classAccesses>
-    <fieldPermissions><editable>true</editable><field>AI_Item_Map__c.Contact__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>AI_Item_Map__c.Item_Id__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>AI_Item_Map__c.Job__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>AI_Item_Map__c.Kind__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>AI_Item_Map__c.Processed__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>AI_Item_Map__c.Run_Id__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Candidate_Match__c.Contact__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Candidate_Match__c.Education_Score__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Candidate_Match__c.Experience_Score__c</field><readable>true</readable></fieldPermissions>
@@ -46,7 +29,6 @@
     <fieldPermissions><editable>true</editable><field>Contact.City__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Contact.Expected_Salary__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Contact.Has_Resume__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Contact.Resume_Job_Run_Id__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Contact.Resume_Parse_Error__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Contact.Resume_Parse_Status__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Contact.Resume_Parsed_On__c</field><readable>true</readable></fieldPermissions>
@@ -79,7 +61,6 @@
     <fieldPermissions><editable>true</editable><field>Skill__c.Years_Experience__c</field><readable>true</readable></fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
     <label>Resume Matching</label>
-    <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>AI_Item_Map__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Candidate_Match__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Education_History__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Employment_History__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>

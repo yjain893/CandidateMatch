@@ -82,7 +82,6 @@ private class CandidateMatcherTest {
         System.assertEquals(2, started.get('matched'));          // Anna, Ben (Dan / Eve are not parsed)
         System.assertEquals(2, started.get('toScore'));
         System.assertEquals(2, started.get('notParsed'));        // Dan and Eve match the filters but cannot be shown
-        System.assertEquals(0, [SELECT COUNT() FROM AI_Item_Map__c]);   // no AiJobRun involved
         System.assertEquals(0, [SELECT COUNT() FROM Skill__c]);         // nothing was parsed on this screen
 
         CandidateMatcherController.Results res = CandidateMatcherController.getResults((String) started.get('runKey'));
@@ -108,31 +107,22 @@ private class CandidateMatcherTest {
         System.assertEquals(0, again.toScore);
     }
 
-    @IsTest static void aiJobRunModeScoresParsedCandidates() {
-        CandidateMatchService.useAiJobRun = true;
-        AiJobGateway.testMode = true;
+    @IsTest static void resultsAreSortedBestScoreFirstAndFlagRowsToCheck() {
         Job__c job = [SELECT Id FROM Job__c];
-        PromptRunner.mockResponse = EXTRACT_JSON;
-        CandidateMatchOrchestrator.Filters f = new CandidateMatchOrchestrator.Filters();
-        CandidateMatchOrchestrator.StartResult r = CandidateMatchOrchestrator.start(job.Id, f);
-        System.assertEquals(2, r.toScore);
-
-        List<AI_Item_Map__c> mm = [SELECT Id, Item_Id__c, Kind__c, Contact__c, Job__c FROM AI_Item_Map__c WHERE Kind__c = 'MATCH'];
-        System.assertEquals(2, mm.size());
         Contact anna = [SELECT Id FROM Contact WHERE LastName = 'Anna'];
-        Map<String, AiJobGateway.ItemResult> res = new Map<String, AiJobGateway.ItemResult>();
-        for (AI_Item_Map__c m : mm) {
-            AiJobGateway.ItemResult ir = new AiJobGateway.ItemResult();
-            ir.itemId = m.Item_Id__c; ir.status = 'Completed';
-            ir.response = JSON.serialize(new Map<String, Object>{ 'promptResponse' => scoreJson(m.Contact__c == anna.Id ? 90 : 60) });
-            res.put(m.Item_Id__c, ir);
-        }
-        AiJobResultService.apply(mm, res);
-        CandidateMatcherController.Results out = CandidateMatcherController.getResults(r.runKey);
+        Contact ben = [SELECT Id FROM Contact WHERE LastName = 'Ben'];
+        insert new List<Candidate_Match__c>{
+            new Candidate_Match__c(Job__c = job.Id, Contact__c = ben.Id, Run_Key__c = 'rk1', Status__c = 'Scored', Score__c = 60, Needs_Review__c = false),
+            new Candidate_Match__c(Job__c = job.Id, Contact__c = anna.Id, Run_Key__c = 'rk1', Status__c = 'Scored', Score__c = 90, Needs_Review__c = true)
+        };
+        CandidateMatcherController.Results out = CandidateMatcherController.getResults('rk1');
         System.assertEquals(true, out.done);
+        System.assertEquals(2, out.scored);
         System.assertEquals('Anna', out.rows[0].name);            // best score first
         System.assertEquals(90, out.rows[0].score);
+        System.assertEquals('Scored (please check)', out.rows[0].status);
         System.assertEquals(60, out.rows[1].score);
+        System.assertEquals('Scored', out.rows[1].status);
     }
 
     @IsTest static void emptyMatchAndOptions() {

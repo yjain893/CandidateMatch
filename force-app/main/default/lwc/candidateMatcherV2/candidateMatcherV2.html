@@ -1,0 +1,234 @@
+<template>
+    <lightning-card title="Candidate Matcher" icon-name="standard:search">
+        <div class="layout slds-p-horizontal_medium slds-p-bottom_medium">
+
+            <!-- ===================== Left: filters ===================== -->
+            <div class="filters">
+                <lightning-record-picker
+                    label="Job"
+                    placeholder="Search jobs..."
+                    object-api-name="Job__c"
+                    onchange={handleJobChange}>
+                </lightning-record-picker>
+
+                <div class="field">
+                    <span class="field-label">Work mode</span>
+                    <div class="tiles">
+                        <template for:each={workModeTiles} for:item="tile">
+                            <button key={tile.value} type="button" class={tile.className} data-value={tile.value}
+                                    aria-pressed={tile.pressed} onclick={handleModeClick}>
+                                <lightning-icon icon-name={tile.icon} size="x-small" class="tile-icon"></lightning-icon>
+                                <span>{tile.label}</span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <lightning-input label="City" value={cities} placeholder="Jaipur, Pune" onchange={handleCities}></lightning-input>
+                    <p class="help">Comma separated for several</p>
+                </div>
+
+                <div class="field">
+                    <lightning-input type="number" label="Max expected salary ($)" value={maxSalary} onchange={handleSalary}></lightning-input>
+                </div>
+
+                <div class="field">
+                    <span class="field-label">Role types</span>
+                    <div class="ms">
+                        <template if:true={rolesOpen}>
+                            <div class="backdrop" onclick={closeRoles}></div>
+                        </template>
+                        <button type="button" class="ms-button" aria-haspopup="listbox" aria-expanded={rolesExpanded} onclick={toggleRoles}>
+                            <span class="ms-text">{roleButtonLabel}</span>
+                            <template if:true={hasRoles}>
+                                <span class="ms-count">{roleCount}</span>
+                            </template>
+                            <lightning-icon icon-name="utility:chevrondown" size="xx-small"></lightning-icon>
+                        </button>
+                        <template if:true={rolesOpen}>
+                            <div class="ms-panel" onkeydown={handleRolesKey}>
+                                <lightning-input type="search" variant="label-hidden" label="Search roles" placeholder="Search roles"
+                                                 value={roleSearch} onchange={handleRoleSearch}></lightning-input>
+                                <ul class="ms-list" role="listbox" aria-multiselectable="true">
+                                    <template for:each={roleRows} for:item="role">
+                                        <li key={role.value} class={role.className} role="option" aria-selected={role.ariaSelected}
+                                            data-value={role.value} onclick={handleRoleToggle}>
+                                            <span class="box">
+                                                <lightning-icon icon-name="utility:check" variant="inverse" size="xx-small"></lightning-icon>
+                                            </span>
+                                            <span>{role.label}</span>
+                                        </li>
+                                    </template>
+                                    <template if:true={noRoleRows}>
+                                        <li class="option option-empty">No roles found</li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </template>
+                        <template if:true={hasRoles}>
+                            <div class="chips">
+                                <template for:each={roleChips} for:item="chip">
+                                    <span key={chip.value} class="chip">
+                                        {chip.label}
+                                        <button type="button" class="chip-x" data-value={chip.value} aria-label={chip.removeLabel}
+                                                onclick={handleRoleRemove}>&times;</button>
+                                    </span>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="buttons">
+                    <lightning-button variant="brand" label={applyLabel} onclick={handleApply} disabled={applyDisabled}></lightning-button>
+                    <lightning-button label="Clear" onclick={handleClear}></lightning-button>
+                </div>
+                <p class="count" aria-live="polite">{countText}</p>
+                <p class="help">{notParsedText}</p>
+            </div>
+
+            <!-- ===================== Right: results ===================== -->
+            <div class="results">
+
+                <template if:true={showKpis}>
+                    <div class="kpis">
+                        <div class="kpi"><span class="kpi-label">Candidates</span><span class="kpi-value">{total}</span></div>
+                        <div class="kpi"><span class="kpi-label">Scored</span><span class="kpi-value">{kpiScored}</span></div>
+                        <div class="kpi"><span class="kpi-label">Top match</span><span class="kpi-value kpi-text">{topMatch}</span></div>
+                    </div>
+                </template>
+
+                <!-- Progress panel: tells the user what is happening while candidates are scored in the background -->
+                <template if:true={showPanel}>
+                    <div class={panelClass} role="status" aria-live="polite">
+                        <div class="panel-row">
+                            <div class="panel-icon slds-is-relative">
+                                <template if:true={isRunning}>
+                                    <div role="status" class="slds-spinner slds-spinner_brand slds-spinner_small">
+                                        <span class="slds-assistive-text">Scoring in progress</span>
+                                        <div class="slds-spinner__dot-a"></div>
+                                        <div class="slds-spinner__dot-b"></div>
+                                    </div>
+                                </template>
+                                <template if:false={isRunning}>
+                                    <lightning-icon icon-name={endIconName} variant={endIconVariant} size="small" alternative-text={headline}></lightning-icon>
+                                </template>
+                            </div>
+                            <div class="panel-text">
+                                <p class="panel-head">{headline}</p>
+                                <p class="muted">{subline}</p>
+                                <template if:true={slow}>
+                                    <p class="muted slds-m-top_xx-small">{slowNote}</p>
+                                </template>
+                            </div>
+                            <template if:true={showTime}>
+                                <div class="panel-time muted">{timeText}</div>
+                            </template>
+                        </div>
+                        <template if:true={isScoring}>
+                            <div class="slds-m-top_small">
+                                <lightning-progress-bar value={progressValue} size="large" variant="circular"></lightning-progress-bar>
+                                <p class="muted slds-m-top_xx-small">{progressLabel}</p>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <template if:true={startNote}>
+                    <p class="muted slds-m-bottom_small">{startNote}</p>
+                </template>
+
+                <template if:true={hasRows}>
+                    <div class="toolbar">
+                        <div class="toolbar-search">
+                            <lightning-input type="search" variant="label-hidden" label="Search candidates"
+                                             placeholder="Search by name or skill" value={search} onchange={handleSearch}></lightning-input>
+                        </div>
+                        <div class="toolbar-sort">
+                            <lightning-combobox name="sort" label="Sort candidates" variant="label-hidden" value={sort}
+                                                options={sortOptions} onchange={handleSort}></lightning-combobox>
+                        </div>
+                    </div>
+                </template>
+
+                <template if:true={emptyText}>
+                    <p class="empty">{emptyText}</p>
+                </template>
+
+                <template for:each={visibleRows} for:item="row">
+                    <div key={row.contactId} class="card">
+                        <div class="card-head">
+                            <div class="ring" style={row.ringStyle}><span>{row.ringText}</span></div>
+                            <div class="card-title">
+                                <div class="name-line">
+                                    <a class="name" href={row.nameUrl} target="_blank" rel="noopener noreferrer">{row.name}</a>
+                                    <template if:true={row.showTop}><span class="badge badge-top">Top match</span></template>
+                                    <template if:true={row.showCheck}><span class="badge badge-check">Please check</span></template>
+                                    <template if:true={row.showFailed}><span class="badge badge-error">Could not be scored</span></template>
+                                    <template if:true={row.showResumeReview}><span class="badge badge-check">Resume needs review</span></template>
+                                    <template if:true={row.isPending}><span class="badge badge-muted">Waiting to be scored</span></template>
+                                </div>
+                                <div class="meta">{row.metaText}</div>
+                            </div>
+                            <template if:true={row.isFinal}>
+                                <button type="button" class="chevron" data-id={row.contactId} aria-expanded={row.ariaExpanded}
+                                        aria-label="Show details" onclick={toggleDetails}>
+                                    <lightning-icon icon-name={row.chevronIcon} size="x-small"></lightning-icon>
+                                </button>
+                            </template>
+                        </div>
+
+                        <template if:true={row.isPending}>
+                            <div class="skeleton skeleton-long"></div>
+                            <div class="skeleton skeleton-short"></div>
+                        </template>
+
+                        <template if:true={row.hasBars}>
+                            <div class="bars">
+                                <template for:each={row.bars} for:item="bar">
+                                    <div key={bar.key} class="bar-item">
+                                        <span>{bar.text}</span>
+                                        <div class="bar-track"><div class="bar-fill" style={bar.style}></div></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <template if:true={row.hasMatched}>
+                            <div class="skills">
+                                <span class="skills-label">Matches</span>
+                                <div class="skills-chips">
+                                    <template for:each={row.matchedChips} for:item="chip">
+                                        <span key={chip.key} class="skill skill-yes">{chip.label}</span>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                        <template if:true={row.hasMissing}>
+                            <div class="skills">
+                                <span class="skills-label">Missing</span>
+                                <div class="skills-chips">
+                                    <template for:each={row.missingChips} for:item="chip">
+                                        <span key={chip.key} class="skill skill-no">{chip.label}</span>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template if:true={row.isOpen}>
+                            <div class="details">
+                                <p class="details-title">Why this score</p>
+                                <p class="details-text">{row.detailsText}</p>
+                                <template if:true={row.hasResume}>
+                                    <lightning-button label="View resume" icon-name="utility:file" data-doc={row.resumeDocId}
+                                                      onclick={viewResume}></lightning-button>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </lightning-card>
+</template>

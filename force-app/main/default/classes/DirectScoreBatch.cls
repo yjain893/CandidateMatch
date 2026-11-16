@@ -20,7 +20,12 @@ public with sharing class DirectScoreBatch implements Database.Batchable<SObject
         try {
             for (Id jobId : byJob.keySet()) { CandidateMatchService.scoreDirect(jobId, byJob.get(jobId)); }
         } catch (Exception e) {
-            for (Candidate_Match__c m : scope) { m.Status__c = 'Failed: AI scoring'; }
+            System.debug(LoggingLevel.ERROR, 'DirectScoreBatch failed: ' + e.getTypeName() + ': ' + e.getMessage()
+                + ' | ' + e.getStackTraceString());
+            for (Candidate_Match__c m : scope) {
+                m.Status__c = 'Failed: AI scoring';
+                m.Reasoning__c = ('Error: ' + e.getTypeName() + ': ' + e.getMessage()).left(5000);
+            }
             update scope;
         }
     }

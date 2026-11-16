@@ -8,8 +8,11 @@ public with sharing class PromptRunner {
 
     @TestVisible private static String mockResponse;
     @TestVisible private static Map<String, String> mockByTemplate;
+    @TestVisible private static String mockError;
+
 
     public static String run(String templateDevName, Map<String, Object> inputs) {
+        if (mockError != null) { throw new PromptException(mockError); }
         if (mockByTemplate != null && mockByTemplate.containsKey(templateDevName)) { return mockByTemplate.get(templateDevName); }
         if (mockResponse != null) { return mockResponse; }
 

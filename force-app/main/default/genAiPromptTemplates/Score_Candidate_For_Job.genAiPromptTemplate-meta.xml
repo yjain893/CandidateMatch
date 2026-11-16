@@ -34,7 +34,10 @@ How to score each part:
   If the candidate's value for a detail is "unknown", give about half credit for that detail. Ignore details the job does not specify.
 - educationScore: relevance of degrees / certifications to the role. If the job does not ask for any, use 70.
 Rules:
-- matchedSkills must be skills written in the candidate profile, using the profile's own wording. Never list a skill you cannot find there.
+- matchedSkills must be short skill names (1-4 words, never a sentence) that are written in the candidate profile. Copy the wording
+  EXACTLY as it appears in the profile (its Skills line, or its job descriptions), not the job's wording and not a paraphrase.
+  Example: the profile says "Mentored a team of 4 developers" -> list "Mentored" or "Mentored developers", not "Team leadership".
+  Never list a skill you cannot find in the profile. If the profile only implies a skill, leave it out of matchedSkills.
 - missingSkills are requirements from the job that the profile does not show.
 - Ignore gender, age, ethnicity, nationality and every other protected trait.
 - Do not assume anything that is not written.</content>

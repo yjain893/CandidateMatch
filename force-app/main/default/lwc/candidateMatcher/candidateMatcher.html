@@ -48,19 +48,53 @@
                 </div>
 
                 <div class="slds-m-top_medium">
-                    <lightning-button variant="brand" label="Apply filters" onclick={handleApply} disabled={applyDisabled}></lightning-button>
+                    <lightning-button variant="brand" label={applyLabel} onclick={handleApply} disabled={applyDisabled}></lightning-button>
                     <lightning-button class="slds-m-left_x-small" label="Clear" onclick={handleClear}></lightning-button>
                 </div>
             </div>
 
             <!-- Right: results -->
             <div class="slds-col slds-size_3-of-4">
-                <template if:true={busy}>
-                    <lightning-spinner alternative-text="Working" size="small"></lightning-spinner>
+                <!-- Progress panel: tells the user what is happening while candidates are scored in the background -->
+                <template if:true={showPanel}>
+                    <div class={panelClass} role="status" aria-live="polite">
+                        <div class="slds-grid slds-grid_vertical-align-center">
+                            <div class="panel-icon slds-is-relative">
+                                <template if:true={isRunning}>
+                                    <div role="status" class="slds-spinner slds-spinner_brand slds-spinner_small">
+                                        <span class="slds-assistive-text">Scoring in progress</span>
+                                        <div class="slds-spinner__dot-a"></div>
+                                        <div class="slds-spinner__dot-b"></div>
+                                    </div>
+                                </template>
+                                <template if:false={isRunning}>
+                                    <lightning-icon icon-name={endIconName} variant={endIconVariant} size="small" alternative-text={headline}></lightning-icon>
+                                </template>
+                            </div>
+                            <div class="slds-col slds-m-left_medium">
+                                <p class="slds-text-heading_small">{headline}</p>
+                                <p class="slds-text-color_weak">{subline}</p>
+                                <template if:true={slow}>
+                                    <p class="slds-text-color_weak slds-m-top_xx-small">{slowNote}</p>
+                                </template>
+                            </div>
+                            <template if:true={showTime}>
+                                <div class="slds-col slds-grow-none slds-m-left_medium slds-text-align_right slds-text-color_weak panel-time">{timeText}</div>
+                            </template>
+                        </div>
+                        <template if:true={isScoring}>
+                            <div class="slds-m-top_small">
+                                <lightning-progress-bar value={progressValue} size="large" variant="circular"></lightning-progress-bar>
+                                <p class="slds-m-top_xx-small slds-text-color_weak">{progressLabel}</p>
+                            </div>
+                        </template>
+                    </div>
                 </template>
                 <template if:true={summary}>
                     <p class="slds-text-heading_small slds-m-bottom_x-small">{summary}</p>
-                    <p class="slds-text-color_weak slds-m-bottom_small">{startNote}</p>
+                    <template if:true={startNote}>
+                        <p class="slds-text-color_weak slds-m-bottom_small">{startNote}</p>
+                    </template>
                 </template>
                 <template if:true={hasRows}>
                     <div class="table-wrap">
@@ -73,7 +107,7 @@
                         </lightning-datatable>
                     </div>
                 </template>
-                <template if:false={hasRows}>
+                <template if:true={showPlaceholder}>
                     <p class="slds-text-color_weak">Pick a job, adjust the filters if you like, then click Apply filters.</p>
                 </template>
             </div>

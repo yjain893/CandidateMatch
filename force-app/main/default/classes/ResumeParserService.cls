@@ -1,6 +1,6 @@
 /**
  * Turns parsed-resume JSON into Skill__c / Education_History__c / Employment_History__c records.
- *  - persist(): shared by the AiJobRun path and the synchronous path (single contact / fallback).
+ *  - persist(): saves the parsed results (used by process() below).
  *  - Accuracy guard: thin or low-confidence parses get status 'Review' and are excluded from matching until a human approves.
  */
 public with sharing class ResumeParserService {

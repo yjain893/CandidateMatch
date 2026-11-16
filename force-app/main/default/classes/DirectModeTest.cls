@@ -41,6 +41,28 @@ private class DirectModeTest {
         System.assertEquals('Failed: AI scoring', [SELECT Status__c FROM Candidate_Match__c].Status__c);
     }
 
+    static Id queuedRow(String runKey) {
+        Job__c job = new Job__c(Name = 'Dev', Job_Description__c = 'Java');
+        insert job;
+        Contact c = new Contact(LastName = 'Throttled', Resume_Parse_Status__c = 'Parsed', Candidate_Profile__c = 'Skills: Java');
+        insert c;
+        Candidate_Match__c m = new Candidate_Match__c(Job__c = job.Id, Contact__c = c.Id,
+            Status__c = 'Queued for scoring', Run_Key__c = runKey);
+        insert m;
+        return m.Id;
+    }
+
+    @IsTest static void aiErrorFailsImmediatelyAndShowsTheReason() {
+        Id mid = queuedRow('k3');
+        PromptRunner.mockError = 'API request failed: 429 Too Many Requests';
+        Test.startTest();
+        Database.executeBatch(new DirectScoreBatch('k3'), 2);
+        Test.stopTest();
+        Candidate_Match__c m = [SELECT Status__c, Reasoning__c FROM Candidate_Match__c WHERE Id = :mid];
+        System.assertEquals('Failed: AI scoring', m.Status__c);
+        System.assert(m.Reasoning__c.contains('429 Too Many Requests'));
+    }
+
     @IsTest static void preParseSchedulerReadsPendingResumes() {
         Contact c = new Contact(LastName = 'Reader');
         insert c;
