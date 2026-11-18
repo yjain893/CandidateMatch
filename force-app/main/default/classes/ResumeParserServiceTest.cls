@@ -29,6 +29,25 @@ private class ResumeParserServiceTest {
         System.assert(r.Candidate_Profile__c.contains('Senior Engineer'));
     }
 
+    @IsTest static void aRepeatedKeyInTheResumeAnswerStillParses() {
+        // The model sometimes repeats a key (here at the top and inside a skill). Typed parsing used to reject the whole answer.
+        Contact c = contactWithPdf('Pending');
+        PromptRunner.mockResponse = '{"summary":"Developer","summary":"Dev","confidence":"high",'
+            + '"skills":[{"name":"Java","years":5,"years":6},{"name":"Apex","years":null}],'
+            + '"education":[{"institution":"MIT","degree":"BS","fieldOfStudy":"CS","startDate":"2010","endDate":"2014"}],'
+            + '"employment":[{"employer":"Acme","role":"Senior Engineer","startDate":"2015-01","endDate":null,"description":"Built things"}]}';
+        System.assertEquals(0, ResumeParserService.process(new List<Id>{ c.Id }));
+        System.assertEquals('Parsed', [SELECT Resume_Parse_Status__c FROM Contact WHERE Id = :c.Id].Resume_Parse_Status__c);
+        System.assertEquals(6, [SELECT Years_Experience__c FROM Skill__c WHERE Contact__c = :c.Id AND Name = 'Java'].Years_Experience__c);
+    }
+
+    @IsTest static void aBrokenAnswerStillFailsTheContact() {
+        Contact c = contactWithPdf('Pending');
+        PromptRunner.mockResponse = '{"summary": "broken", "skills": [}';   // braces are there, the JSON itself is invalid
+        System.assertEquals(1, ResumeParserService.process(new List<Id>{ c.Id }));
+        System.assertEquals('Failed', [SELECT Resume_Parse_Status__c FROM Contact WHERE Id = :c.Id].Resume_Parse_Status__c);
+    }
+
     @IsTest static void thinParseGoesToReview() {
         Contact c = contactWithPdf('Pending');
         PromptRunner.mockResponse = '{"summary":"x","confidence":"low","skills":[],"education":[],"employment":[]}';

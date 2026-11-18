@@ -25,7 +25,7 @@ public with sharing class JobRequirementsService {
     }
 
     public static void applyText(Id jobId, String raw) {
-        Requirements r = (Requirements) JSON.deserialize(PromptRunner.clean(raw), Requirements.class);
+        Requirements r = (Requirements) PromptRunner.parse(raw, Requirements.class);
         Job__c job = [SELECT Id, Job_Description__c, City__c, Work_Modes__c, Min_Experience_Years__c
                       FROM Job__c WHERE Id = :jobId];
         job.Required_Skills__c = joinList(r.requiredSkills, 2000);

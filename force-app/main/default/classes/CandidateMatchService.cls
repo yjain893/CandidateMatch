@@ -75,7 +75,7 @@ public with sharing class CandidateMatchService {
                 if (String.isBlank(c.Candidate_Profile__c)) { throw new PromptRunner.PromptException('No profile text'); }
                 String raw = PromptRunner.run(TEMPLATE, new Map<String, Object>{
                     'Job_Description' => jd, 'Candidate_Profile' => candidateText(c) });
-                ScoreResult r = (ScoreResult) JSON.deserialize(PromptRunner.clean(raw), ScoreResult.class);
+                ScoreResult r = (ScoreResult) PromptRunner.parse(raw, ScoreResult.class);
                 toSave.add(buildMatch(jobId, c.Id, r, c.Candidate_Profile__c, row, fit));
             } catch (Exception e) {
                 System.debug(LoggingLevel.ERROR, 'scoreDirect failed for contact ' + c.Id + ': ' + e.getTypeName() + ': '

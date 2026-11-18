@@ -24,7 +24,7 @@ public with sharing class ResumeParserService {
     }
 
     public static ParsedResume parseText(String raw) {
-        return (ParsedResume) JSON.deserialize(PromptRunner.clean(raw), ParsedResume.class);
+        return (ParsedResume) PromptRunner.parse(raw, ParsedResume.class);
     }
 
     /** Synchronous path: one prompt call per contact (agent action, small volumes, fallback). */

@@ -46,4 +46,13 @@ public with sharing class PromptRunner {
         if (s < 0 || e <= s) { throw new PromptException('No JSON object found in prompt response'); }
         return raw.substring(s, e + 1);
     }
+
+    /**
+     * Turns the model's answer into an object of the given class. Models sometimes repeat a key, and typed JSON.deserialize
+     * rejects that ("Duplicate field: ...fitScore") and fails the whole item. The answer is read loosely first (the last value
+     * of a repeated key wins) and then typed, so a repeated key no longer matters. A real format problem still throws.
+     */
+    public static Object parse(String raw, System.Type t) {
+        return JSON.deserialize(JSON.serialize(JSON.deserializeUntyped(clean(raw))), t);
+    }
 }

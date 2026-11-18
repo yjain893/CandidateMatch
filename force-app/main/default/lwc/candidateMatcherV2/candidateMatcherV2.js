@@ -589,17 +589,21 @@ export default class CandidateMatcherV2 extends NavigationMixin(LightningElement
             if (y === null) { return -1; }
             return (x - y) * dir;
         };
+        // Highest score first (rows that are not scored yet go last). Also the tie-break for the other sorts.
+        const byScore = cmpNullsLast(
+            a.status === 'Scored' ? num(a.score) : null,
+            b.status === 'Scored' ? num(b.score) : null,
+            -1
+        );
         let c = 0;
         if (this.sort === 'exp') {
             c = cmpNullsLast(num(a.experienceYears), num(b.experienceYears), -1);
         } else if (this.sort === 'sal') {
             c = cmpNullsLast(num(a.salary), num(b.salary), 1);
         } else {
-            const as = a.status === 'Scored' ? num(a.score) : null;
-            const bs = b.status === 'Scored' ? num(b.score) : null;
-            c = cmpNullsLast(as, bs, -1);
+            c = byScore;
         }
-        return c || byName;
+        return c || byScore || byName;
     }
 
     /** Adds everything the card needs to show: ring, badges, bars, chips, the details text. */

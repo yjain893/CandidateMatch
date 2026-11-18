@@ -88,6 +88,24 @@ private class CandidateMatchServiceTest {
         System.assertEquals('Apex', m.Matched_Skills__c, '"REST" alone is not the claimed phrase');
     }
 
+    @IsTest static void aRepeatedKeyInTheAiAnswerStillScores() {
+        // The model sometimes repeats a key. This used to fail the row with "Duplicate field: ...ScoreResult.fitScore".
+        Job__c job = new Job__c(Name = 'Dev', Job_Description__c = 'Java', City__c = 'Jaipur');
+        insert job;
+        Contact c = new Contact(LastName = 'Repeat', City__c = 'Jaipur', Resume_Parse_Status__c = 'Parsed', Candidate_Profile__c = 'Skills: Java');
+        insert c;
+        insert new Candidate_Match__c(Job__c = job.Id, Contact__c = c.Id, Status__c = 'Queued for scoring', Run_Key__c = 'rk');
+        PromptRunner.mockByTemplate = new Map<String, String>{ CandidateMatchService.TEMPLATE =>
+            '{"skillsScore":80,"experienceScore":70,"fitScore":90,"fitScore":60,"educationScore":70,'
+            + '"matchedSkills":["Java"],"missingSkills":[],"fitNote":"x","reasoning":"Good"}' };
+
+        CandidateMatchService.scoreDirect(job.Id, new List<Id>{ c.Id });
+
+        Candidate_Match__c m = [SELECT Status__c, Fit_Score__c FROM Candidate_Match__c];
+        System.assertEquals('Scored', m.Status__c);
+        System.assertEquals(60, m.Fit_Score__c, 'the last value of the repeated key wins');
+    }
+
     @IsTest static void aSkillMustMatchWholeWords() {
         CandidateMatchService.ScoreResult r = result(80, 80, 80, 80, new List<String>{ 'Java', 'Apex' }, 'ok');
         Candidate_Match__c m = CandidateMatchService.buildMatch(jobId(), contactId(), r, 'Skills: JavaScript, Apex', null, true);

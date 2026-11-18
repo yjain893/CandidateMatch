@@ -14,6 +14,14 @@ private class JobRequirementsServiceTest {
         System.assertNotEquals(null, r.Requirements_Hash__c);
     }
 
+    @IsTest static void aRepeatedKeyInTheAnswerStillWorks() {
+        Job__c job = new Job__c(Name = 'Dev', Job_Description__c = 'Java dev, 5+ years');
+        insert job;
+        JobRequirementsService.applyText(job.Id,
+            '{"requiredSkills":["Java"],"niceToHaveSkills":[],"synonyms":[],"minExperienceYears":3,"minExperienceYears":5}');
+        System.assertEquals(5, [SELECT Min_Experience_Years__c FROM Job__c WHERE Id = :job.Id].Min_Experience_Years__c);
+    }
+
     @IsTest static void normalizesWorkMode() {
         System.assertEquals('On-site', JobRequirementsService.normalizeMode('On site'));
         System.assertEquals('Remote', JobRequirementsService.normalizeMode('fully remote'));
