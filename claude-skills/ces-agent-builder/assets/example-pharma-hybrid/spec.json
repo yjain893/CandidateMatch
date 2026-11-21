@@ -1,0 +1,70 @@
+{
+  "app": {
+    "displayName": "Pharma Order Assistant",
+    "description": "Same agent as example-pharma, but Salesforce is reached through the Salesforce connector (OAuth client credentials). The Python tool keeps all the checks and calls the connector.",
+    "channel": "voice",
+    "defaultLanguage": "en-US",
+    "timeZone": "America/Toronto",
+    "model": "gemini-composite-v2",
+    "persona": "CONCISE",
+    "voice": {"name": "en-US-Chirp3-HD-Rasalgethi", "speakingRate": 1.0, "ambientSound": "office_3"},
+    "inactivityTimeout": "10s",
+    "rootAgent": "Root agent",
+    "globalInstructionFile": "instructions/global.txt"
+  },
+  "salesforce": {
+    "orgAlias": "demoOrg",
+    "instanceUrl": "https://orgfarm-a33d5ea226-dev-ed.develop.my.salesforce.com",
+    "apiVersion": "v68.0",
+    "transport": "connector",
+    "connectorTool": "query_salesforce_find_order",
+    "auth": {"mode": "oauth_client_credentials", "clientId": "REPLACE_WITH_CONSUMER_KEY", "clientSecretVersion": "projects/PROJECT_ID/secrets/salesforce-client-secret/versions/latest"}
+  },
+  "variables": [
+    {"name": "company_name", "type": "STRING", "default": "Yash Pharma", "description": "Company name used in greetings and instructions."},
+    {"name": "agent_name", "type": "STRING", "default": "Asha", "description": "Name the agent introduces itself with."}
+  ],
+  "toolsets": [
+    {"name": "query_salesforce", "type": "salesforce_openapi", "title": "Salesforce order lookup", "server_includes_version": true,
+     "description": "Salesforce connector. Used only by the authenticate_user Python tool; the agent never calls it directly.",
+     "operations": [
+       {"kind": "soql_query", "operationId": "find_order", "allow_free_soql": true,
+        "description": "Runs the fixed order lookup used by authenticate_user. Not for direct use by the agent.",
+        "q_description": "The fixed order lookup query, built by the authenticate_user tool.",
+        "q_pattern": "^SELECT [A-Za-z0-9_., ]+ FROM Order WHERE OrderNumber = '[0-9]{1,8}' LIMIT 1$",
+        "response_fields": ["Id", "OrderNumber", "Status", "EffectiveDate", "EndDate", {"name": "TotalAmount", "type": "number"}, "AccountId", {"name": "Account", "type": "object", "properties": ["Phone"]}]}
+     ]}
+  ],
+  "tools": [
+    {
+      "name": "authenticate_user",
+      "template": "verify_caller",
+      "params": {
+        "sobject": "Order",
+        "identifier": {"param": "order_number", "field": "OrderNumber", "normalize": "digits", "pad": 8, "doc": "The order number the caller gave, for example \"1234\" or \"00001234\"."},
+        "factor": {"param": "phone_number", "field": "Account.Phone", "kind": "phone", "doc": "The phone number registered with the order, in any format."},
+        "return_fields": {"order_number": "OrderNumber", "order_status": "Status", "order_date": "EffectiveDate", "end_date": "EndDate", "total_amount": "TotalAmount"},
+        "scope_field": "AccountId",
+        "max_attempts": 3
+      }
+    }
+  ],
+  "guardrails": [
+    {"type": "default_safety", "level": "strict"},
+    {"type": "default_prompt_security"}
+  ],
+  "agents": [
+    {
+      "displayName": "Root agent",
+      "description": "Verifies the caller and answers order status questions.",
+      "instructionFile": "instructions/root.txt",
+      "tools": ["authenticate_user", "end_session"],
+      "callbacks": {
+        "beforeModel": [
+          {"template": "static_greeting", "params": {"greeting": "Hello, thank you for calling {company_name}. My name is {agent_name}. How can I help you today?"}},
+          {"template": "escalate_on_system_error", "params": {"tools": ["authenticate_user"], "message": "I'm sorry, I can't reach our order system right now. Let me connect you with a team member."}}
+        ]
+      }
+    }
+  ]
+}

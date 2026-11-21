@@ -1,0 +1,16 @@
+{
+  "name": "8ac6d711-acdd-4cfb-ae95-b16c950f7f7b",
+  "displayName": "Root agent",
+  "instruction": "agents/Root_agent/instruction.txt",
+  "tools": ["end_session", "get_order_status", "get_shipping_address", "identify_caller", "save_transcript", "update_shipping_address", "verify_caller_email"],
+  "beforeModelCallbacks": [{
+    "pythonCode": "agents/Root_agent/before_model_callbacks/before_model_callbacks_01/python_code.py"
+  }, {
+    "pythonCode": "agents/Root_agent/before_model_callbacks/before_model_callbacks_02/python_code.py"
+  }, {
+    "pythonCode": "agents/Root_agent/before_model_callbacks/before_model_callbacks_03/python_code.py"
+  }],
+  "afterModelCallbacks": [{
+    "pythonCode": "agents/Root_agent/after_model_callbacks/after_model_callbacks_01/python_code.py"
+  }]
+}

@@ -1,0 +1,364 @@
+{
+  "app": {
+    "displayName": "Support Showcase Agent",
+    "description": "Regression example that uses every generator feature: all five tool templates, the Salesforce connector toolset, every callback template and every guardrail type.",
+    "channel": "voice",
+    "defaultLanguage": "en-US",
+    "supportedLanguages": [
+      "fr-CA"
+    ],
+    "multilingual": true,
+    "timeZone": "America/Toronto",
+    "model": "gemini-3.5-flash",
+    "thinkingLevel": "LOW",
+    "persona": "CONCISE",
+    "voice": {
+      "name": "en-US-Chirp3-HD-Aoede",
+      "speakingRate": 1.05
+    },
+    "inactivityTimeout": "8s",
+    "logging": {
+      "retentionDays": 90,
+      "redaction": true,
+      "cloudLogging": true
+    },
+    "errorHandling": {
+      "strategy": "FALLBACK_RESPONSE",
+      "maxFallbackAttempts": 2,
+      "escalateOnEnd": true,
+      "customFallbackMessage": "Sorry, I had trouble with that. Could you say it again?"
+    },
+    "toolExecutionMode": "SEQUENTIAL",
+    "rootAgent": "Root agent",
+    "globalInstructionFile": "instructions/global.txt"
+  },
+  "salesforce": {
+    "orgAlias": "demoOrg",
+    "instanceUrl": "https://orgfarm-a33d5ea226-dev-ed.develop.my.salesforce.com",
+    "apiVersion": "v68.0",
+    "auth": {
+      "mode": "bearer_variable",
+      "tokenVariable": "salesforce_access_token"
+    }
+  },
+  "variables": [
+    {
+      "name": "company_name",
+      "type": "STRING",
+      "default": "Cymbal Support",
+      "description": "Company name."
+    },
+    {
+      "name": "business_hours",
+      "type": "STRING",
+      "default": "Monday to Friday, 9 to 5 Eastern",
+      "description": "Hours quoted when the caller asks."
+    },
+    {
+      "name": "recording_notice",
+      "type": "STRING",
+      "default": "This call may be recorded for quality.",
+      "description": "Mandatory notice for the first reply."
+    }
+  ],
+  "tools": [
+    {
+      "name": "verify_contact",
+      "template": "verify_caller",
+      "params": {
+        "sobject": "Contact",
+        "identifier": {
+          "param": "email_address",
+          "field": "Email",
+          "normalize": "none"
+        },
+        "factor": {
+          "param": "postal_code",
+          "field": "MailingPostalCode",
+          "kind": "text"
+        },
+        "return_fields": {
+          "first_name": "FirstName",
+          "account_name": "Account.Name"
+        },
+        "scope_field": "AccountId",
+        "max_attempts": 3
+      }
+    },
+    {
+      "name": "find_my_cases",
+      "template": "search_records",
+      "params": {
+        "sobject": "Case",
+        "filters": [
+          {
+            "param": "status",
+            "field": "Status",
+            "op": "=",
+            "type": "picklist",
+            "allowed": [
+              "New",
+              "Working",
+              "Escalated",
+              "Closed"
+            ]
+          },
+          {
+            "param": "subject_contains",
+            "field": "Subject",
+            "op": "LIKE",
+            "type": "string",
+            "max_length": 80
+          }
+        ],
+        "return_fields": {
+          "case_number": "CaseNumber",
+          "subject": "Subject",
+          "status": "Status"
+        },
+        "scope_field": "AccountId",
+        "require_filter": false,
+        "order_by": "CreatedDate DESC",
+        "max_rows": 3
+      }
+    },
+    {
+      "name": "get_case",
+      "template": "lookup_record",
+      "params": {
+        "sobject": "Case",
+        "lookup": {
+          "param": "case_number",
+          "field": "CaseNumber",
+          "normalize": "digits",
+          "pad": 8
+        },
+        "return_fields": {
+          "case_number": "CaseNumber",
+          "subject": "Subject",
+          "status": "Status",
+          "priority": "Priority"
+        },
+        "scope_field": "AccountId"
+      }
+    },
+    {
+      "name": "create_callback_case",
+      "template": "create_record",
+      "params": {
+        "sobject": "Case",
+        "fields": [
+          {
+            "param": "subject",
+            "field": "Subject",
+            "type": "string",
+            "required": true,
+            "max_length": 120,
+            "doc": "Short title of the request."
+          },
+          {
+            "param": "description",
+            "field": "Description",
+            "type": "text",
+            "max_length": 2000
+          },
+          {
+            "param": "priority",
+            "field": "Priority",
+            "type": "picklist",
+            "allowed": [
+              "Low",
+              "Medium",
+              "High"
+            ]
+          }
+        ],
+        "fixed_values": {
+          "Origin": "Phone"
+        },
+        "scope_assignments": {
+          "AccountId": "verified_scope_id",
+          "ContactId": "verified_record_id"
+        },
+        "return_fields": {
+          "case_number": "CaseNumber"
+        }
+      }
+    },
+    {
+      "name": "add_case_note",
+      "template": "update_record",
+      "params": {
+        "sobject": "Case",
+        "lookup": {
+          "param": "case_number",
+          "field": "CaseNumber",
+          "normalize": "digits",
+          "pad": 8
+        },
+        "fields": [
+          {
+            "param": "description",
+            "field": "Description",
+            "type": "text",
+            "max_length": 2000
+          }
+        ],
+        "scope_field": "AccountId"
+      }
+    }
+  ],
+  "toolsets": [
+    {
+      "name": "salesforce_connector",
+      "type": "salesforce_openapi",
+      "title": "Salesforce Case connector",
+      "description": "Direct Salesforce REST operations exposed as tools (OpenAPI toolset).",
+      "operations": [
+        {
+          "kind": "get_record",
+          "operationId": "get_case_by_id",
+          "sobject": "Case",
+          "fields": [
+            "Id",
+            "CaseNumber",
+            "Subject",
+            "Status"
+          ],
+          "description": "Get one case by its Salesforce Id."
+        },
+        {
+          "kind": "apex_rest",
+          "operationId": "case_summary",
+          "method": "get",
+          "path": "/services/apexrest/caseSummary",
+          "params": [
+            {
+              "name": "caseNumber",
+              "type": "string",
+              "required": true,
+              "description": "Case number"
+            }
+          ],
+          "response_fields": {
+            "summary": "string"
+          },
+          "description": "Custom Apex REST endpoint that returns a plain-language case summary."
+        }
+      ]
+    }
+  ],
+  "guardrails": [
+    {
+      "type": "default_safety",
+      "level": "balanced"
+    },
+    {
+      "type": "default_prompt_security",
+      "fail_open": false
+    },
+    {
+      "type": "llm_policy",
+      "displayName": "Stay on support topics",
+      "policy_scope": "USER_QUERY",
+      "fail_open": true,
+      "prompt": "Block the message if it asks for anything unrelated to customer support, such as writing code or giving legal advice.",
+      "action": {
+        "respond": "I can only help with support questions."
+      }
+    },
+    {
+      "type": "blocklist",
+      "displayName": "Competitor names",
+      "user_input": [
+        "acme rival"
+      ],
+      "agent_response": [
+        "acme rival"
+      ],
+      "match": "WORD_BOUNDARY_STRING_MATCH",
+      "action": {
+        "respond": "I can't discuss that. Is there anything else I can help with?"
+      }
+    },
+    {
+      "type": "sensitive_words",
+      "displayName": "Sensitive words filter"
+    },
+    {
+      "type": "supervisor",
+      "displayName": "Missed tool call watch",
+      "supervisor_type": "MISSING_TOOL_CALL",
+      "detection": "NON_BLOCKING"
+    }
+  ],
+  "agents": [
+    {
+      "displayName": "Root agent",
+      "description": "Routes support calls.",
+      "instructionFile": "instructions/root.txt",
+      "tools": [
+        "verify_contact",
+        "find_my_cases",
+        "get_case",
+        "create_callback_case",
+        "add_case_note",
+        "end_session",
+        "customize_response"
+      ],
+      "toolsets": [
+        {
+          "toolset": "salesforce_connector",
+          "toolIds": [
+            "get_case_by_id",
+            "case_summary"
+          ]
+        }
+      ],
+      "callbacks": {
+        "beforeModel": [
+          {
+            "template": "static_greeting",
+            "params": {
+              "greeting": "Thanks for calling {company_name}. How can I help?",
+              "disclaimer": "Calls may be recorded."
+            }
+          },
+          {
+            "template": "inactivity_prompt",
+            "params": {
+              "text": "Are you still there?"
+            }
+          },
+          {
+            "template": "escalate_on_system_error",
+            "params": {
+              "tools": [],
+              "message": "I'm having trouble reaching our systems. Let me get a team member."
+            }
+          },
+          {
+            "template": "hide_tools",
+            "params": {
+              "tools": [
+                "add_case_note"
+              ]
+            },
+            "description": "Showcase only: keeps one tool out of the model's view. Not part of any verified agent."
+          }
+        ],
+        "afterModel": [
+          {
+            "template": "mandatory_text",
+            "params": {
+              "text": "This call may be recorded for quality."
+            }
+          },
+          {
+            "template": "redact_output"
+          }
+        ]
+      }
+    }
+  ]
+}

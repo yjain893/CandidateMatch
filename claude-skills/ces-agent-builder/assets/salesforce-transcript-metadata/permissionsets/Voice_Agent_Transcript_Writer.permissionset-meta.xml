@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Voice Agent Transcript Writer</label>
+    <description>For the integration user the voice agent runs as: may create and update voice call transcripts and nothing else. Give it with the read-only order access the agent already has.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <objectPermissions><allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Voice_Call_Transcript__c</object><viewAllRecords>false</viewAllRecords></objectPermissions>
+    <fieldPermissions><editable>true</editable><field>Voice_Call_Transcript__c.Session_Id__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Voice_Call_Transcript__c.Transcript__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Voice_Call_Transcript__c.Started_At__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Voice_Call_Transcript__c.Ended_At__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Voice_Call_Transcript__c.Duration_Seconds__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Voice_Call_Transcript__c.Turn_Count__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Voice_Call_Transcript__c.Agent_Name__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Voice_Call_Transcript__c.Caller_Verified__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Voice_Call_Transcript__c.Outcome__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Voice_Call_Transcript__c.Order__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Voice_Call_Transcript__c.Account__c</field><readable>true</readable></fieldPermissions>
+    <userPermissions><enabled>true</enabled><name>ApiEnabled</name></userPermissions>
+</PermissionSet>

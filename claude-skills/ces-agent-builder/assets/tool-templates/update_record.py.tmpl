@@ -1,0 +1,46 @@
+def __NAME__(__SIGNATURE__) -> dict:
+__DOCSTRING__
+__COMMON__
+  try:
+    blocked = _require_verified()
+    if blocked:
+      return blocked
+    if CFG.get("require_confirmation", True) and ARGS.get("caller_confirmed") is not True:
+      return _fail("not_confirmed", "Read the change back to the caller and get a clear yes before saving.")
+    value = _normalize_key(ARGS["lookup"], CFG["lookup"])
+    if not value:
+      return _fail("invalid_input", "A valid value is needed to find the record.")
+    body = {}
+    for spec in CFG["fields"]:
+      raw = ARGS.get(spec["param"])
+      if raw is None or str(raw).strip() == "":
+        continue
+      clean, problem = _check_value(spec, raw)
+      if problem:
+        return _fail("invalid_input", spec["param"] + " " + problem)
+      body[spec["field"]] = clean
+    if not body:
+      return _fail("invalid_input", "At least one value to change is needed.")
+    scope_sql, scope_err = _scope_clause()
+    if scope_err:
+      return scope_err
+    soql = ("SELECT Id FROM " + CFG["sobject"] + " WHERE " + CFG["lookup"]["field"] + " = '" +
+            _soql_text(value) + "'" + scope_sql + " LIMIT 1")
+    records, err = _query(soql)
+    if err:
+      return err
+    if not records:
+      return _fail("not_found", "No matching record was found.")
+    record_id = records[0]["Id"]
+    if CFG.get("write_connector_tool"):
+      err = _write_via_connector(CFG["write_connector_tool"], {"id": record_id}, body)
+    else:
+      _resp, err = _request("PATCH", "/sobjects/" + CFG["sobject"] + "/" + record_id, body=body)
+    if err:
+      return err
+    if CFG.get("remember_id_as"):
+      context.variables[CFG["remember_id_as"]] = record_id
+    return {"ok": True, "updated_fields": sorted(body.keys()), "message": "Saved."}
+  except Exception as e:
+    print("tool: unexpected error:", type(e).__name__, str(e)[:200])
+    return _fail("tool_error", "The request could not be completed right now.", system=True)

@@ -1,0 +1,10 @@
+{
+  "name": "75647521-73ff-4e6d-b61c-2a7c1388332a",
+  "pythonFunction": {
+    "name": "authenticate_user",
+    "pythonCode": "tools/authenticate_user/python_function/python_code.py",
+    "description": "Verifies a caller by checking the order number and the phone number registered in Salesforce. Call this once the caller has given both. If verified is true, the details in the result can be shared with the caller. If verified is false, do not share anything.\n\nArgs:\n  order_number: The order number the caller gave, for example \"1234\" or \"00001234\".\n  phone_number: The phone number registered with the order, in any format.\n\nReturns:\n  dict: verified (true or false) and a message. When verified is true it also has order_number, order_status, order_date, end_date, total_amount. If error is not_verified the caller may retry (see attempts_remaining). If system_error is true or error is locked_out, stop and escalate."
+  },
+  "executionType": "SYNCHRONOUS",
+  "displayName": "authenticate_user"
+}

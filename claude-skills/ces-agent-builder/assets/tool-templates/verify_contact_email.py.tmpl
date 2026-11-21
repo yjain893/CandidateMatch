@@ -1,0 +1,52 @@
+def __NAME__(__SIGNATURE__) -> dict:
+__DOCSTRING__
+__COMMON__
+  import re
+
+  def _spoken_to_email(text):
+    # "john dot smith at gmail dot com", "john at the rate gmail dot com", "j o h n at gmail dot com" -> john.smith@gmail.com
+    words = str(text or "").lower().replace(",", " ").split()
+    out, i = [], 0
+    while i < len(words):
+      w = words[i]
+      if w == "at" and words[i + 1:i + 3] == ["the", "rate"]:
+        out.append("@")
+        i += 3
+        if words[i:i + 1] == ["of"]:
+          i += 1
+        continue
+      if w == "at" and words[i + 1:i + 2] == ["sign"]:
+        out.append("@")
+        i += 2
+        continue
+      out.append({"at": "@", "dot": ".", "underscore": "_", "dash": "-", "hyphen": "-", "plus": "+"}.get(w, w))
+      i += 1
+    return "".join(out).strip(".")
+
+  def _valid(address):
+    return re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", address) is not None
+
+  try:
+    attempts = int(context.variables.get("verification_attempts") or 0)
+    max_attempts = int(CFG["max_attempts"])
+    if attempts >= max_attempts:
+      return {"verified": False, "ok": False, "error": "locked_out", "message": "Too many failed attempts."}
+    heard = _spoken_to_email(ARGS["email"])
+    if not _valid(heard):
+      # not counted as a try: nothing was compared
+      return {"verified": False, "ok": False, "error": "invalid_input", "message": "That does not sound like a complete email address. Ask the caller to say it again."}
+    stored = str(context.variables.get(CFG["email_variable"]) or "").strip().lower()
+    known = context.variables.get("caller_status") == "known"
+    # a blank stored address, or a caller who was not recognised, never matches
+    if not known or not stored or stored != heard:
+      count = attempts + 1
+      context.variables["verification_attempts"] = count
+      return {"verified": False, "ok": False, "error": "not_verified", "message": "That email address does not match our records.",
+              "attempts_remaining": max(max_attempts - count, 0)}
+    context.variables["caller_verified"] = True
+    context.variables["verification_attempts"] = 0
+    return {"verified": True, "ok": True, "message": "The caller is verified."}
+  except Exception as e:
+    print("tool: unexpected error:", type(e).__name__, str(e)[:200])
+    return {"verified": False, "ok": False, "error": "tool_error", "system_error": True,
+            "message": "The request could not be completed right now."}

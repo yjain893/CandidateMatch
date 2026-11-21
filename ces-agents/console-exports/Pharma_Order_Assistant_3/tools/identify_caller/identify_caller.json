@@ -1,0 +1,10 @@
+{
+  "name": "f5b36816-5f03-4230-8372-17b8a66adbdb",
+  "pythonFunction": {
+    "name": "identify_caller",
+    "pythonCode": "tools/identify_caller/python_function/python_code.py",
+    "description": "Recognises the caller from the phone number they are calling from, by looking for exactly one matching Salesforce contact. It runs automatically at the start of the call. Do not call it yourself.\n\nArgs:\n  include_details: Internal use by the start-of-call callback: also return the contact\u0027s email and ids. Leave empty.\n\nReturns:\n  dict: ok, caller_status (known or unknown) and first_name. If system_error is true the lookup failed and the caller is treated as unknown."
+  },
+  "executionType": "SYNCHRONOUS",
+  "displayName": "identify_caller"
+}

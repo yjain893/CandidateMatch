@@ -1,0 +1,39 @@
+{
+  "app": {
+    "displayName": "Smoke Test Agent",
+    "description": "Smallest useful package: one agent, one tool, default guardrails. Import this first to prove the import path works.",
+    "channel": "voice",
+    "defaultLanguage": "en-US",
+    "timeZone": "America/Toronto",
+    "model": "gemini-composite-v2",
+    "persona": "CHATTY",
+    "voice": {"name": "en-US-Chirp3-HD-Rasalgethi", "speakingRate": 1.0, "ambientSound": "office_3"},
+    "rootAgent": "Root agent",
+    "globalInstructionFile": "instructions/global.txt"
+  },
+  "salesforce": {
+    "orgAlias": "demoOrg",
+    "instanceUrl": "https://orgfarm-a33d5ea226-dev-ed.develop.my.salesforce.com",
+    "apiVersion": "v68.0",
+    "auth": {"mode": "bearer_variable", "tokenVariable": "salesforce_access_token"}
+  },
+  "variables": [
+    {"name": "company_name", "type": "STRING", "default": "Smoke Test Co", "description": "Company name."}
+  ],
+  "tools": [
+    {
+      "name": "authenticate_user",
+      "template": "verify_caller",
+      "params": {
+        "sobject": "Order",
+        "identifier": {"param": "order_number", "field": "OrderNumber", "normalize": "digits", "pad": 8},
+        "factor": {"param": "phone_number", "field": "Account.Phone", "kind": "phone"},
+        "return_fields": {"order_number": "OrderNumber", "order_status": "Status"},
+        "scope_field": "AccountId"
+      }
+    }
+  ],
+  "agents": [
+    {"displayName": "Root agent", "instructionFile": "instructions/root.txt", "tools": ["authenticate_user", "end_session"]}
+  ]
+}

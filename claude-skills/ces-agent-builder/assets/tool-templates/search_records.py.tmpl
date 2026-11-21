@@ -1,0 +1,45 @@
+def __NAME__(__SIGNATURE__) -> dict:
+__DOCSTRING__
+__COMMON__
+  try:
+    blocked = _require_verified()
+    if blocked:
+      return blocked
+    scope_sql, scope_err = _scope_clause()
+    if scope_err:
+      return scope_err
+    conditions = []
+    for spec in CFG["filters"]:
+      value = ARGS.get(spec["param"])
+      if value is None or str(value).strip() == "":
+        continue
+      clean, problem = _check_value(spec, value)
+      if problem:
+        return _fail("invalid_input", spec["param"] + " " + problem)
+      op = spec.get("op", "=")
+      field = spec["field"]
+      kind = spec.get("type", "string")
+      if kind in ("number", "boolean"):
+        literal = str(clean).lower() if kind == "boolean" else str(clean)
+      elif kind == "date":
+        literal = str(clean)
+      elif op == "LIKE":
+        literal = "'%" + _soql_text(str(clean).replace("%", "").replace("_", "")) + "%'"
+      else:
+        literal = "'" + _soql_text(clean) + "'"
+      conditions.append(field + " " + op + " " + literal)
+    if CFG.get("require_filter", True) and not conditions:
+      return _fail("invalid_input", "At least one search detail is needed.")
+    where = " AND ".join(conditions) if conditions else "Id != null"
+    fields = ["Id"] + list(CFG["return_fields"].values())
+    soql = "SELECT " + ", ".join(dict.fromkeys(fields)) + " FROM " + CFG["sobject"] + " WHERE " + where + scope_sql
+    if CFG.get("order_by"):
+      soql += " ORDER BY " + CFG["order_by"]
+    soql += " LIMIT " + str(int(CFG.get("max_rows", 5)))
+    records, err = _query(soql)
+    if err:
+      return err
+    return {"ok": True, "count": len(records), "records": [_map_fields(r, CFG["return_fields"]) for r in records]}
+  except Exception as e:
+    print("tool: unexpected error:", type(e).__name__, str(e)[:200])
+    return _fail("tool_error", "The request could not be completed right now.", system=True)

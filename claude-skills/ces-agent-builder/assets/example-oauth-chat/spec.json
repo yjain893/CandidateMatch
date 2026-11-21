@@ -1,0 +1,45 @@
+{
+  "app": {
+    "displayName": "Store Info Chat Agent",
+    "description": "Chat agent for public store and product information. Uses the Salesforce connector (OpenAPI toolset) with OAuth client credentials, no Python tools, no caller verification because the data is public.",
+    "channel": "chat",
+    "defaultLanguage": "en-US",
+    "timeZone": "America/Toronto",
+    "model": "gemini-3.5-flash",
+    "thinkingLevel": "LOW",
+    "persona": "CHATTY",
+    "rootAgent": "Root agent"
+  },
+  "salesforce": {
+    "orgAlias": "prodOrg",
+    "instanceUrl": "https://example-domain.my.salesforce.com",
+    "apiVersion": "v68.0",
+    "auth": {"mode": "oauth_client_credentials", "clientId": "REPLACE_WITH_CONSUMER_KEY", "clientSecretVersion": "projects/PROJECT_ID/secrets/sf-client-secret/versions/latest"}
+  },
+  "variables": [
+    {"name": "company_name", "type": "STRING", "default": "Cymbal Stores", "description": "Company name."}
+  ],
+  "toolsets": [
+    {"name": "salesforce_connector", "type": "salesforce_openapi", "title": "Store info",
+     "description": "Public store and product information from Salesforce.",
+     "operations": [
+       {"kind": "apex_rest", "operationId": "get_store_hours", "method": "get", "path": "/services/apexrest/storeHours",
+        "params": [{"name": "city", "type": "string", "required": true, "description": "City of the store"}],
+        "response_fields": {"opens": "string", "closes": "string"}, "description": "Returns opening hours for the store in a city."},
+       {"kind": "get_record", "operationId": "get_product_by_id", "sobject": "Product2", "fields": ["Id", "Name", "Description"], "description": "Get a product by its Salesforce Id."}
+     ]}
+  ],
+  "guardrails": [
+    {"type": "default_safety", "level": "balanced"},
+    {"type": "default_prompt_security"},
+    {"type": "blocklist", "displayName": "Competitor names", "both": ["acme rival"], "action": {"respond": "I can only talk about our own stores and products."}}
+  ],
+  "agents": [
+    {
+      "displayName": "Root agent",
+      "instructionFile": "instructions/root.txt",
+      "tools": ["end_session"],
+      "toolsets": [{"toolset": "salesforce_connector", "toolIds": ["get_store_hours", "get_product_by_id"]}]
+    }
+  ]
+}

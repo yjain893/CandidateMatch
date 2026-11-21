@@ -1,0 +1,178 @@
+  # ---- org settings (generated from the spec: change them there, not here) ----
+  INSTANCE_URL = __INSTANCE_URL__
+  API_VERSION = __API_VERSION__
+  TOKEN_VARIABLE = __TOKEN_VARIABLE__
+  CONNECTOR_TOOL = __CONNECTOR_TOOL__   # when set, Salesforce is reached through the Salesforce connector tool (platform OAuth)
+  CFG = __CFG__
+  ARGS = __ARGS_DICT__
+
+  def _digits(value):
+    return "".join(ch for ch in str(value or "") if ch.isdigit())
+
+  def _soql_text(value):
+    # escape a text value so it is safe between single quotes in SOQL
+    return str(value).replace("\\", "\\\\").replace("'", "\\'")
+
+  def _fail(error, message, system=False, **extra):
+    out = {"ok": False, "error": error, "message": message}
+    if system:
+      out["system_error"] = True
+    out.update(extra)
+    return out
+
+  def _get_path(record, path):
+    # read "Account.Phone" style paths from a Salesforce record
+    cur = record
+    for part in str(path).split("."):
+      if not isinstance(cur, dict):
+        return None
+      cur = cur.get(part)
+    return cur
+
+  def _map_fields(record, mapping):
+    return {key: _get_path(record, path) for key, path in mapping.items()}
+
+  def _request(method, path, params=None, body=None):
+    token = str(context.variables.get(TOKEN_VARIABLE) or "").strip()
+    if not token:
+      print("tool: variable", TOKEN_VARIABLE, "is empty")
+      return None, _fail("token_missing", "The system is not connected right now.", system=True)
+    headers = {"Authorization": "Bearer " + token, "Accept": "application/json"}
+    url = INSTANCE_URL + "/services/data/" + API_VERSION + path
+    if method == "GET":
+      resp = ces_requests.get(url, params=params, headers=headers)
+    else:
+      headers["Content-Type"] = "application/json"
+      if method == "POST":
+        resp = ces_requests.post(url, json=body, headers=headers)
+      else:
+        resp = ces_requests.patch(url, json=body, headers=headers)
+    if resp.status_code == 401:
+      print("tool: Salesforce rejected the access token (401)")
+      return None, _fail("salesforce_auth_failed", "The system is not available right now.", system=True)
+    if resp.status_code >= 400:
+      print("tool: Salesforce returned status", resp.status_code)
+      return None, _fail("salesforce_error", "The system is not available right now.", system=True, code=resp.status_code)
+    return resp, None
+
+  def _query_via_connector(soql):
+    # the connector tool is called like a function; the platform adds the OAuth token
+    try:
+      res = getattr(tools, CONNECTOR_TOOL)({"q": soql})
+    except Exception as e:
+      code = getattr(e, "status_code", None)
+      print("tool: connector call failed:", type(e).__name__, code)
+      if code == 401:
+        return None, _fail("salesforce_auth_failed", "The system is not available right now.", system=True)
+      return None, _fail("salesforce_error", "The system is not available right now.", system=True, code=code)
+    status = getattr(res, "status_code", 200)
+    if status == 401:
+      print("tool: connector returned 401")
+      return None, _fail("salesforce_auth_failed", "The system is not available right now.", system=True)
+    if isinstance(status, int) and status >= 400:
+      print("tool: connector returned status", status)
+      return None, _fail("salesforce_error", "The system is not available right now.", system=True, code=status)
+    data = res.json() if hasattr(res, "json") else res
+    if isinstance(data, dict) and "records" not in data and isinstance(data.get("result"), dict):
+      data = data["result"]      # some tool responses wrap the body in {"result": ...}
+    if not isinstance(data, dict):
+      print("tool: unexpected connector response type:", type(data).__name__)
+      return None, _fail("tool_error", "The request could not be completed right now.", system=True)
+    return (data.get("records") or []), None
+
+  def _write_via_connector(tool_name, path_args, body):
+    # How the connector maps a request body to arguments is not documented, so three argument shapes are tried in turn
+    shapes = [dict(path_args, **body), dict(path_args, body=body), dict(path_args, requestBody=body)]
+    status = None
+    for index, args in enumerate(shapes):
+      try:
+        res = getattr(tools, tool_name)(args)
+      except Exception as e:
+        status = getattr(e, "status_code", None)
+        print("tool: connector write failed with argument shape", index, type(e).__name__, status)
+        if status == 401:
+          break
+        continue
+      status = getattr(res, "status_code", 200)
+      if not isinstance(status, int) or status < 400:
+        print("tool: change saved through the connector with argument shape", index)
+        return None
+      print("tool: connector returned", status, "for argument shape", index)
+      if status == 401:
+        break
+    kind = "salesforce_auth_failed" if status == 401 else "salesforce_error"
+    return _fail(kind, "The system is not available right now.", system=True, code=status)
+
+  def _query(soql):
+    if CONNECTOR_TOOL:
+      return _query_via_connector(soql)
+    resp, err = _request("GET", "/query", params={"q": soql})
+    if err:
+      return None, err
+    return (resp.json().get("records") or []), None
+
+  def _normalize_key(value, cfg):
+    kind = cfg.get("normalize", "none")
+    raw = str(value or "").strip()
+    if kind == "digits":
+      out = _digits(raw)
+      if out and cfg.get("pad"):
+        out = out.zfill(int(cfg["pad"]))
+      return out
+    if kind == "alnum_upper":
+      return "".join(ch for ch in raw.upper() if ch.isalnum() or ch == "-")
+    return raw
+
+  def _require_verified():
+    if CFG.get("require_verified", True) and not context.variables.get("caller_verified"):
+      return _fail("not_verified", "The caller must be verified before this can be done.")
+    return None
+
+  def _scope_clause():
+    # row level security: only records that belong to the verified caller
+    field = CFG.get("scope_field")
+    if not field:
+      return "", None
+    scope = context.variables.get("verified_scope_id")
+    if not scope:
+      return "", _fail("not_verified", "The caller must be verified before this can be done.")
+    return " AND " + field + " = '" + _soql_text(scope) + "'", None
+
+  def _check_value(spec, value):
+    # returns (clean_value, error_message)
+    kind = spec.get("type", "string")
+    if kind in ("string", "text", "phone", "email"):
+      text = str(value).strip()
+      limit = int(spec.get("max_length", 255))
+      if len(text) > limit:
+        return None, "too long (maximum %d characters)" % limit
+      return text, None
+    if kind == "number":
+      try:
+        num = float(value)
+      except (TypeError, ValueError):
+        return None, "must be a number"
+      return (int(num) if num == int(num) else num), None
+    if kind == "boolean":
+      if isinstance(value, bool):
+        return value, None
+      text = str(value).strip().lower()
+      if text in ("true", "yes", "1"):
+        return True, None
+      if text in ("false", "no", "0"):
+        return False, None
+      return None, "must be true or false"
+    if kind == "date":
+      text = str(value).strip()
+      parts = text.split("-")
+      if len(parts) == 3 and len(parts[0]) == 4 and parts[0].isdigit() and parts[1].isdigit() and parts[2].isdigit():
+        return text, None
+      return None, "must be a date like 2026-11-28"
+    if kind == "picklist":
+      allowed = spec.get("allowed") or []
+      for item in allowed:
+        if str(item).lower() == str(value).strip().lower():
+          return item, None
+      return None, "must be one of: " + ", ".join(str(a) for a in allowed)
+    return str(value).strip(), None
+

@@ -1,0 +1,16 @@
+{
+  "name": "dc6e2700-052d-4e96-b36c-fa1f5dfadb18",
+  "displayName": "query_salesforce",
+  "openApiToolset": {
+    "openApiSchema": "toolsets/query_salesforce/open_api_toolset/open_api_schema.yaml",
+    "apiAuthentication": {
+      "oauthConfig": {
+        "oauthGrantType": "CLIENT_CREDENTIAL",
+        "clientId": "REPLACE_WITH_CONSUMER_KEY",
+        "clientSecretVersion": "$env_var",
+        "tokenEndpoint": "$env_var"
+      }
+    }
+  },
+  "description": "Salesforce connector used only by the authenticate_user Python tool. The agent never calls it directly."
+}

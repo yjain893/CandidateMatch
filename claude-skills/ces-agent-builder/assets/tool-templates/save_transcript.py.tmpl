@@ -1,0 +1,147 @@
+def __NAME__(__SIGNATURE__) -> dict:
+__DOCSTRING__
+__COMMON__
+  import datetime
+  import re
+  import urllib.parse
+
+  def _epoch_iso(value):
+    # session event times are seconds, milliseconds or microseconds since 1970; anything else is ignored
+    try:
+      num = float(value)
+    except (TypeError, ValueError):
+      return None
+    if num > 1e14:
+      num = num / 1e6
+    elif num > 1e11:
+      num = num / 1e3
+    if num < 1e9:
+      return None
+    return datetime.datetime.fromtimestamp(num, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+  def _seconds_between(first, last):
+    try:
+      a = datetime.datetime.strptime(first, "%Y-%m-%dT%H:%M:%SZ")
+      b = datetime.datetime.strptime(last, "%Y-%m-%dT%H:%M:%SZ")
+    except (TypeError, ValueError):
+      return None
+    return max(int((b - a).total_seconds()), 0)
+
+  def _redact(text):
+    for pattern in (CFG.get("redact_patterns") or {}).values():
+      text = re.sub(pattern, "[removed]", text)
+    return text
+
+  def _clean(text):
+    # the platform adds notes such as <context>agent speaking was interrupted ...</context> to caller turns; they are not the caller's words
+    text = re.sub(r"<context>.*?</context>", " ", str(text), flags=re.S)
+    return " ".join(text.split())
+
+  def _collect():
+    # caller and agent turns, one per line; tool calls, tool results and system events are left out
+    lines, first, last, turns = [], None, None, 0
+    for ev in list(getattr(context, "events", None) or []):
+      parts = getattr(getattr(ev, "content", None), "parts", None) or []
+      texts = []
+      for part in parts:
+        try:
+          text = part.text_or_transcript()
+        except Exception:
+          text = getattr(part, "text", None)
+        text = _clean(text) if text else ""
+        if text and not text.startswith("<event>"):
+          texts.append(text)
+      if not texts:
+        continue
+      is_user = ev.is_user() if hasattr(ev, "is_user") else str(getattr(ev, "author", "")) == "user"
+      if is_user:
+        turns += 1
+      lines.append(("Caller: " if is_user else "Agent: ") + " ".join(texts))
+      stamp = _epoch_iso(getattr(ev, "timestamp", None))
+      if stamp:
+        first = first or stamp
+        last = stamp
+    return lines, first, last, turns
+
+  def _outcome(hint):
+    word = str(hint or "").lower()
+    if "escalat" in word:
+      return "Escalated"
+    if "verif" in word:
+      return "Verification failed"
+    if "system" in word or "tool_failure" in word:
+      return "System error"
+    if "complet" in word or context.variables.get("caller_verified"):
+      return "Completed"
+    if int(context.variables.get("verification_attempts") or 0) >= int(CFG.get("max_attempts", 3)):
+      return "Verification failed"
+    return "Unknown"
+
+  def _save_through_connector(session_id, body):
+    # How the connector maps a request body is not documented, so three argument shapes are tried in turn
+    path_arg = {CFG.get("path_param", "session_id"): session_id}
+    shapes = [dict(path_arg, **body), dict(path_arg, body=body), dict(path_arg, requestBody=body)]
+    status, detail = None, ""
+    for index, args in enumerate(shapes):
+      try:
+        res = getattr(tools, CFG["connector_tool"])(args)
+      except Exception as e:
+        status, detail = getattr(e, "status_code", None), str(e)[:300]
+        print("tool: connector call failed with argument shape", index, type(e).__name__, status)
+        if status == 401:
+          break
+        continue
+      status = getattr(res, "status_code", 200)
+      if not isinstance(status, int) or status < 400:
+        print("tool: transcript saved through the connector with argument shape", index)
+        return None
+      detail = str(getattr(res, "text", ""))[:300]
+      print("tool: connector returned", status, "for argument shape", index)
+      if status == 401:
+        break
+    kind = "salesforce_auth_failed" if status == 401 else "salesforce_error"
+    return _fail(kind, "The transcript could not be saved.", system=True, code=status, detail=detail)
+
+  try:
+    session_id = str(getattr(context, "session_id", "") or "").strip()
+    if not session_id:
+      return _fail("invalid_input", "There is no session id to save the transcript under.")
+    lines, first, last, turns = _collect()
+    if not lines:
+      return _fail("empty_transcript", "There was nothing to save.")
+    text = _redact("\n".join(lines))
+    limit = int(CFG.get("max_chars", 120000))
+    if len(text) > limit:
+      text = text[:limit] + "\n[transcript truncated]"
+    names = CFG["fields"]
+    body = {}
+
+    def put(key, value):
+      if names.get(key) and value is not None:
+        body[names[key]] = value
+
+    ended = last or datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    put("transcript", text)
+    put("started_at", first)
+    put("ended_at", ended)
+    put("duration_seconds", _seconds_between(first, ended) if first else None)
+    put("turn_count", turns)
+    put("caller_verified", bool(context.variables.get("caller_verified")))
+    put("outcome", _outcome(ARGS.get("outcome")))
+    put("agent_name", (str(getattr(context, "agent_name", "") or "")[:80]) or None)
+    for sf_field, variable in (CFG.get("links") or {}).items():
+      value = context.variables.get(variable)
+      if value:
+        body[sf_field] = str(value)
+
+    if CFG.get("connector_tool"):
+      err = _save_through_connector(session_id, body)
+    else:
+      path = "/sobjects/" + CFG["sobject"] + "/" + CFG["external_id_field"] + "/" + urllib.parse.quote(session_id, safe="")
+      _resp, err = _request("PATCH", path, body=body)
+    if err:
+      return err
+    return {"ok": True, "message": "Transcript saved.", "characters": len(text)}
+  except Exception as e:
+    print("tool: unexpected error:", type(e).__name__, str(e)[:200])
+    return _fail("tool_error", "The transcript could not be saved.", system=True)

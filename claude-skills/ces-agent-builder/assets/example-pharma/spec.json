@@ -1,0 +1,78 @@
+{
+  "app": {
+    "displayName": "Pharma Order Assistant",
+    "description": "Phone assistant that verifies a caller by order number and registered phone, then shares order status.",
+    "channel": "voice",
+    "defaultLanguage": "en-US",
+    "timeZone": "America/Toronto",
+    "model": "gemini-composite-v2",
+    "persona": "CONCISE",
+    "voice": {"name": "en-US-Chirp3-HD-Rasalgethi", "speakingRate": 1.0, "ambientSound": "office_3"},
+    "inactivityTimeout": "10s",
+    "bargeInAwareness": true,
+    "logging": {"retentionDays": 365, "redaction": false},
+    "errorHandling": {"strategy": "FALLBACK_RESPONSE", "maxFallbackAttempts": 1, "escalateOnEnd": true},
+    "rootAgent": "Root agent",
+    "globalInstructionFile": "instructions/global.txt"
+  },
+  "salesforce": {
+    "orgAlias": "demoOrg",
+    "instanceUrl": "https://orgfarm-a33d5ea226-dev-ed.develop.my.salesforce.com",
+    "apiVersion": "v68.0",
+    "auth": {"mode": "bearer_variable", "tokenVariable": "salesforce_access_token"}
+  },
+  "variables": [
+    {"name": "company_name", "type": "STRING", "default": "Yash Pharma", "description": "Company name used in greetings and instructions."},
+    {"name": "agent_name", "type": "STRING", "default": "Asha", "description": "Name the agent introduces itself with."}
+  ],
+  "tools": [
+    {
+      "name": "authenticate_user",
+      "template": "verify_caller",
+      "params": {
+        "sobject": "Order",
+        "identifier": {"param": "order_number", "field": "OrderNumber", "normalize": "digits", "pad": 8, "doc": "The order number the caller gave, for example \"1234\" or \"00001234\"."},
+        "factor": {"param": "phone_number", "field": "Account.Phone", "kind": "phone", "doc": "The phone number registered with the order, in any format."},
+        "return_fields": {"order_number": "OrderNumber", "order_status": "Status", "order_date": "EffectiveDate", "end_date": "EndDate", "total_amount": "TotalAmount"},
+        "scope_field": "AccountId",
+        "max_attempts": 3
+      }
+    },
+    {
+      "name": "find_my_orders",
+      "template": "search_records",
+      "params": {
+        "sobject": "Order",
+        "filters": [{"param": "status", "field": "Status", "op": "=", "type": "picklist", "allowed": ["Draft", "Activated"], "doc": "Only orders with this status."}],
+        "return_fields": {"order_number": "OrderNumber", "order_status": "Status", "order_date": "EffectiveDate"},
+        "scope_field": "AccountId",
+        "require_filter": false,
+        "order_by": "EffectiveDate DESC",
+        "max_rows": 3,
+        "description": "Lists the most recent orders (at most three) of the verified caller. Call it only after the caller is verified."
+      }
+    }
+  ],
+  "guardrails": [
+    {"type": "default_safety", "level": "strict"},
+    {"type": "default_prompt_security"},
+    {"type": "llm_policy", "displayName": "No medical advice", "policy_scope": "AGENT_RESPONSE",
+     "description": "Blocks any agent reply that gives medical, dosage or drug advice.",
+     "prompt": "Block the response if it gives medical advice, dosage instructions, drug information, or tells the caller what to do about a symptom or side effect. Order status and delivery information is allowed.",
+     "action": {"respond": "I can't help with medical questions. A specialist will follow up with you."}}
+  ],
+  "agents": [
+    {
+      "displayName": "Root agent",
+      "description": "Verifies the caller and answers order status questions.",
+      "instructionFile": "instructions/root.txt",
+      "tools": ["authenticate_user", "find_my_orders", "end_session"],
+      "callbacks": {
+        "beforeModel": [
+          {"template": "static_greeting", "params": {"greeting": "Hello, thank you for calling {company_name}. My name is {agent_name}. How can I help you today?"}, "description": "Fixed greeting at session start (saves a model call)."},
+          {"template": "escalate_on_system_error", "params": {"tools": ["authenticate_user", "find_my_orders"], "message": "I'm sorry, I can't reach our order system right now. Let me connect you with a team member."}, "description": "Stops and escalates when a tool reports a system error or a lockout."}
+        ]
+      }
+    }
+  ]
+}

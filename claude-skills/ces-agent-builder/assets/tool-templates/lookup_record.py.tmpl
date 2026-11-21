@@ -1,0 +1,29 @@
+def __NAME__(__SIGNATURE__) -> dict:
+__DOCSTRING__
+__COMMON__
+  try:
+    blocked = _require_verified()
+    if blocked:
+      return blocked
+    value = _normalize_key(ARGS["lookup"], CFG["lookup"])
+    if not value:
+      return _fail("invalid_input", "A valid value is needed to look this up.")
+    scope_sql, scope_err = _scope_clause()
+    if scope_err:
+      return scope_err
+    fields = ["Id"] + list(CFG["return_fields"].values())
+    soql = ("SELECT " + ", ".join(dict.fromkeys(fields)) + " FROM " + CFG["sobject"] +
+            " WHERE " + CFG["lookup"]["field"] + " = '" + _soql_text(value) + "'" + scope_sql + " LIMIT 1")
+    records, err = _query(soql)
+    if err:
+      return err
+    if not records:
+      return _fail("not_found", "No matching record was found.")
+    if CFG.get("remember_id_as") and records[0].get("Id"):
+      context.variables[CFG["remember_id_as"]] = records[0]["Id"]
+    out = {"ok": True}
+    out.update(_map_fields(records[0], CFG["return_fields"]))
+    return out
+  except Exception as e:
+    print("tool: unexpected error:", type(e).__name__, str(e)[:200])
+    return _fail("tool_error", "The request could not be completed right now.", system=True)

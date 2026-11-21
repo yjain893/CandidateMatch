@@ -1,0 +1,74 @@
+def __NAME__(__SIGNATURE__) -> dict:
+__DOCSTRING__
+__COMMON__
+  def _norm_factor(value):
+    cfg = CFG["factor"]
+    kind = cfg.get("kind", "phone")
+    raw = str(value or "").strip()
+    if kind == "phone":
+      return _digits(raw)[-10:]
+    if kind == "digits_last_n":
+      return _digits(raw)[-int(cfg.get("last_n", 4)):]
+    if kind == "email":
+      return raw.lower()
+    return " ".join(raw.lower().split())
+
+  def _factor_valid(norm):
+    kind = CFG["factor"].get("kind", "phone")
+    if kind == "phone":
+      return len(norm) >= 7
+    if kind == "digits_last_n":
+      return len(norm) == int(CFG["factor"].get("last_n", 4))
+    if kind == "email":
+      return "@" in norm
+    return len(norm) >= 2
+
+  try:
+    attempts_var = CFG.get("attempts_variable", "verification_attempts")
+    attempts = int(context.variables.get(attempts_var) or 0)
+    if attempts >= CFG["max_attempts"]:
+      return {"verified": False, "ok": False, "error": "locked_out", "message": "Too many failed attempts."}
+
+    ident = _normalize_key(ARGS["identifier"], CFG["identifier"])
+    factor = _norm_factor(ARGS["factor"])
+    if not ident or not _factor_valid(factor):
+      return {"verified": False, "ok": False, "error": "invalid_input",
+              "message": "A valid identifier and verification detail are both needed."}
+
+    fields = ["Id", CFG["identifier"]["field"], CFG["factor"]["field"]] + list(CFG["return_fields"].values())
+    if CFG.get("scope_field"):
+      fields.append(CFG["scope_field"])
+    soql = ("SELECT " + ", ".join(dict.fromkeys(fields)) + " FROM " + CFG["sobject"] +
+            " WHERE " + CFG["identifier"]["field"] + " = '" + _soql_text(ident) + "' LIMIT 1")
+    records, err = _query(soql)
+    if err:
+      err["verified"] = False
+      return err
+
+    def _not_verified():
+      count = attempts + 1
+      context.variables[attempts_var] = count
+      return {"verified": False, "ok": False, "error": "not_verified",
+              "message": "The details do not match our records.",
+              "attempts_remaining": max(CFG["max_attempts"] - count, 0)}
+
+    if not records:
+      return _not_verified()
+    record = records[0]
+    stored = _norm_factor(_get_path(record, CFG["factor"]["field"]))
+    # a blank value on the record never counts as a match
+    if not stored or stored != factor:
+      return _not_verified()
+
+    context.variables["caller_verified"] = True
+    context.variables["verified_record_id"] = record.get("Id")
+    if CFG.get("scope_field"):
+      context.variables["verified_scope_id"] = _get_path(record, CFG["scope_field"])
+    context.variables[attempts_var] = 0
+    out = {"verified": True, "ok": True, "message": "The caller is verified."}
+    out.update(_map_fields(record, CFG["return_fields"]))
+    return out
+  except Exception as e:
+    print("tool: unexpected error:", type(e).__name__, str(e)[:200])
+    return {"verified": False, "ok": False, "error": "tool_error", "system_error": True,
+            "message": "The request could not be completed right now."}

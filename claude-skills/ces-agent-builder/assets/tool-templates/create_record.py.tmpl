@@ -1,0 +1,42 @@
+def __NAME__(__SIGNATURE__) -> dict:
+__DOCSTRING__
+__COMMON__
+  try:
+    blocked = _require_verified()
+    if blocked:
+      return blocked
+    if CFG.get("require_confirmation", True) and ARGS.get("caller_confirmed") is not True:
+      return _fail("not_confirmed", "Read the details back to the caller and get a clear yes before saving.")
+    body = {}
+    for spec in CFG["fields"]:
+      value = ARGS.get(spec["param"])
+      if value is None or str(value).strip() == "":
+        if spec.get("required"):
+          return _fail("invalid_input", spec["param"] + " is required")
+        continue
+      clean, problem = _check_value(spec, value)
+      if problem:
+        return _fail("invalid_input", spec["param"] + " " + problem)
+      body[spec["field"]] = clean
+    body.update(CFG.get("fixed_values") or {})
+    for field, variable in (CFG.get("scope_assignments") or {}).items():
+      current = context.variables.get(variable)
+      if not current:
+        return _fail("not_verified", "The caller must be verified before this can be done.")
+      body[field] = current
+
+    resp, err = _request("POST", "/sobjects/" + CFG["sobject"], body=body)
+    if err:
+      return err
+    created = resp.json()
+    record_id = created.get("id")
+    out = {"ok": True, "record_id": record_id, "message": "Saved."}
+    if CFG.get("return_fields") and record_id:
+      detail, err2 = _request("GET", "/sobjects/" + CFG["sobject"] + "/" + record_id,
+                              params={"fields": ",".join(dict.fromkeys(CFG["return_fields"].values()))})
+      if not err2:
+        out.update(_map_fields(detail.json(), CFG["return_fields"]))
+    return out
+  except Exception as e:
+    print("tool: unexpected error:", type(e).__name__, str(e)[:200])
+    return _fail("tool_error", "The request could not be completed right now.", system=True)
