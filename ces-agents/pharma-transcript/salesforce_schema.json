@@ -1,0 +1,192 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Salesforce order lookup",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://orgfarm-a33d5ea226-dev-ed.develop.my.salesforce.com/services/data/v68.0"
+    }
+  ],
+  "paths": {
+    "/query": {
+      "get": {
+        "operationId": "find_order",
+        "summary": "Runs the fixed order lookup used by authenticate_user. Not for direct use by the agent.",
+        "description": "Runs the fixed order lookup used by authenticate_user. Not for direct use by the agent.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "The fixed order lookup query, built by the authenticate_user tool.",
+            "schema": {
+              "type": "string",
+              "pattern": "^SELECT [A-Za-z0-9_., ]+ FROM Order WHERE OrderNumber = '[0-9]{1,8}' LIMIT 1$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Query result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totalSize": {
+                      "type": "integer"
+                    },
+                    "done": {
+                      "type": "boolean"
+                    },
+                    "records": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Id": {
+                            "type": "string"
+                          },
+                          "OrderNumber": {
+                            "type": "string"
+                          },
+                          "Status": {
+                            "type": "string"
+                          },
+                          "EffectiveDate": {
+                            "type": "string"
+                          },
+                          "EndDate": {
+                            "type": "string"
+                          },
+                          "TotalAmount": {
+                            "type": "number"
+                          },
+                          "AccountId": {
+                            "type": "string"
+                          },
+                          "Account": {
+                            "type": "object",
+                            "properties": {
+                              "Phone": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Salesforce returned an error"
+          }
+        }
+      }
+    },
+    "/sobjects/Voice_Call_Transcript__c/Session_Id__c/{session_id}": {
+      "patch": {
+        "operationId": "save_transcript",
+        "summary": "Creates or updates the transcript row for one call. Used only by the save_transcript Python tool.",
+        "description": "Creates or updates the transcript row for one call. Used only by the save_transcript Python tool.",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "description": "Value of Session_Id__c that identifies the record",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "Transcript__c": {
+                    "type": "string",
+                    "description": "Caller and agent turns"
+                  },
+                  "Started_At__c": {
+                    "type": "string",
+                    "description": "ISO 8601 date time"
+                  },
+                  "Ended_At__c": {
+                    "type": "string",
+                    "description": "ISO 8601 date time"
+                  },
+                  "Duration_Seconds__c": {
+                    "type": "number"
+                  },
+                  "Turn_Count__c": {
+                    "type": "number"
+                  },
+                  "Outcome__c": {
+                    "type": "string",
+                    "enum": [
+                      "Completed",
+                      "Escalated",
+                      "Verification failed",
+                      "System error",
+                      "Unknown"
+                    ]
+                  },
+                  "Caller_Verified__c": {
+                    "type": "boolean"
+                  },
+                  "Agent_Name__c": {
+                    "type": "string"
+                  },
+                  "Order__c": {
+                    "type": "string",
+                    "description": "Salesforce Order Id"
+                  },
+                  "Account__c": {
+                    "type": "string",
+                    "description": "Salesforce Account Id"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Updated"
+          },
+          "default": {
+            "description": "Salesforce returned an error"
+          }
+        }
+      }
+    }
+  }
+}

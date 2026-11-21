@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Voice Call Transcript</label>
+    <pluralLabel>Voice Call Transcripts</pluralLabel>
+    <description>One row per voice-agent call: the transcript text plus the call's outcome and the order and account it was about. Contains customer personal data: keep access limited.</description>
+    <nameField><label>Transcript Number</label><type>AutoNumber</type><displayFormat>VCT-{00000}</displayFormat><startingNumber>1</startingNumber></nameField>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <sharingModel>Private</sharingModel>
+    <enableActivities>false</enableActivities>
+    <enableHistory>false</enableHistory>
+    <enableReports>true</enableReports>
+    <enableSearch>false</enableSearch>
+</CustomObject>

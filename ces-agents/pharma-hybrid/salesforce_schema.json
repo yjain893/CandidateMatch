@@ -1,0 +1,93 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Salesforce order lookup",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://orgfarm-a33d5ea226-dev-ed.develop.my.salesforce.com/services/data/v68.0"
+    }
+  ],
+  "paths": {
+    "/query": {
+      "get": {
+        "operationId": "find_order",
+        "summary": "Runs the fixed order lookup used by authenticate_user. Not for direct use by the agent.",
+        "description": "Runs the fixed order lookup used by authenticate_user. Not for direct use by the agent.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "The fixed order lookup query, built by the authenticate_user tool.",
+            "schema": {
+              "type": "string",
+              "pattern": "^SELECT [A-Za-z0-9_., ]+ FROM Order WHERE OrderNumber = '[0-9]{1,8}' LIMIT 1$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Query result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totalSize": {
+                      "type": "integer"
+                    },
+                    "done": {
+                      "type": "boolean"
+                    },
+                    "records": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Id": {
+                            "type": "string"
+                          },
+                          "OrderNumber": {
+                            "type": "string"
+                          },
+                          "Status": {
+                            "type": "string"
+                          },
+                          "EffectiveDate": {
+                            "type": "string"
+                          },
+                          "EndDate": {
+                            "type": "string"
+                          },
+                          "TotalAmount": {
+                            "type": "number"
+                          },
+                          "AccountId": {
+                            "type": "string"
+                          },
+                          "Account": {
+                            "type": "object",
+                            "properties": {
+                              "Phone": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Salesforce returned an error"
+          }
+        }
+      }
+    }
+  }
+}
