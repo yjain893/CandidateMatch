@@ -12,6 +12,11 @@
     "save_transcript",
     "end_session"
   ],
+  "beforeAgentCallbacks": [
+    {
+      "pythonCode": "agents/Root_agent/before_agent_callbacks/before_agent_callbacks_01/python_code.py"
+    }
+  ],
   "beforeModelCallbacks": [
     {
       "pythonCode": "agents/Root_agent/before_model_callbacks/before_model_callbacks_01/python_code.py"

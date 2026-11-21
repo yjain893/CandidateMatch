@@ -153,16 +153,6 @@ def update_shipping_address(order_number: str, street: str = "", city: str = "",
       return _fail("not_verified", "The caller must be verified before this can be done.")
     return None
 
-  def _scope_clause():
-    # row level security: only records that belong to the verified caller
-    field = CFG.get("scope_field")
-    if not field:
-      return "", None
-    scope = context.variables.get("verified_scope_id")
-    if not scope:
-      return "", _fail("not_verified", "The caller must be verified before this can be done.")
-    return " AND " + field + " = '" + _soql_text(scope) + "'", None
-
   def _check_value(spec, value):
     # returns (clean_value, error_message)
     kind = spec.get("type", "string")
@@ -221,11 +211,8 @@ def update_shipping_address(order_number: str, street: str = "", city: str = "",
       body[spec["field"]] = clean
     if not body:
       return _fail("invalid_input", "At least one value to change is needed.")
-    scope_sql, scope_err = _scope_clause()
-    if scope_err:
-      return scope_err
     soql = ("SELECT Id FROM " + CFG["sobject"] + " WHERE " + CFG["lookup"]["field"] + " = '" +
-            _soql_text(value) + "'" + scope_sql + " LIMIT 1")
+            _soql_text(value) + "'" + " LIMIT 1")
     records, err = _query(soql)
     if err:
       return err

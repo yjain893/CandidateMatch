@@ -3,6 +3,9 @@
   "displayName": "Root agent",
   "instruction": "agents/Root_agent/instruction.txt",
   "tools": ["end_session", "get_order_status", "get_shipping_address", "identify_caller", "save_transcript", "update_shipping_address", "verify_caller_email"],
+  "beforeAgentCallbacks": [{
+    "pythonCode": "agents/Root_agent/before_agent_callbacks/before_agent_callbacks_01/python_code.py"
+  }],
   "beforeModelCallbacks": [{
     "pythonCode": "agents/Root_agent/before_model_callbacks/before_model_callbacks_01/python_code.py"
   }, {

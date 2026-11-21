@@ -33,7 +33,7 @@ The plan it follows is [design.md](design.md): your script exactly, no extra rul
    2. Variables: static `company_name` = `Abbott`. Dynamic, all Text unless noted: `telephony-caller-id` (exact name), `caller_status`, `caller_name`, `caller_email`, `caller_contact_id`, `caller_account_id`, `last_order_id`, `caller_verified` (Boolean, false), `verification_attempts` (Number, 0).
    3. Python tools: create `identify_caller`, `verify_caller_email`, `get_order_status`, `get_shipping_address`, `update_shipping_address` from `console/tools/`, and replace the code of `save_transcript` with the new file (the transcript links changed).
    4. Root agent: tools = the five above + `save_transcript` + `end_session` (remove `authenticate_user`). Instructions = `console/root_instruction.txt`.
-   5. Callbacks on the Root agent, in this order. Before model: `before_model_1_greet_known_caller`, `before_model_2_escalate_on_system_error`, `before_model_3_inactivity_prompt`. After model: replace the code of the existing callback with `after_model_1_save_transcript_on_end` (verification failures get their own outcome). If the spike said `tool_call`, change `MODE = 'direct'` to `MODE = 'tool_call'` in the first one.
+   5. Callbacks on the Root agent. Before agent: `before_agent_1_lookup_caller_on_start`. Before model, in this order: `before_model_1_greet_known_caller`, `before_model_2_escalate_on_system_error`, `before_model_3_inactivity_prompt`. After model: replace the code of the existing callback with `after_model_1_save_transcript_on_end` (verification failures get their own outcome). If the spike said `tool_call`, change `MODE = 'direct'` to `MODE = 'tool_call'` in the first one.
    6. App settings: tool execution mode **Sequential** (already set). Switch both default guardrails on.
    7. For Preview only: set the default of `telephony-caller-id` to `+14155550101` (John's demo number). **Clear it before go-live.**
 4. **Test** in Preview, then query Salesforce for the transcript row:
@@ -46,8 +46,19 @@ The plan it follows is [design.md](design.md): your script exactly, no extra rul
 ## Importing the zip instead
 The zip contains placeholders (`REPLACE_WITH_CONSUMER_KEY`, `PROJECT_ID`) for the connector login. Fill them in the package's `toolsets/` and `environment.json` before importing, and never put the secret itself there. Pasting into a copy of your working agent avoids this.
 
-## If the welcome message is silent
-It happened once in Preview and the cause is not known (a call at 15:13 greeted correctly). The updated callback always returns a greeting, logs how long the lookup took, and the updated instruction makes the model greet if nobody has. Paste `console/callbacks/before_model_1_greet_known_caller.py` and `console/root_instruction.txt` again. If it still happens, open the first turn in the Preview trace and send me the line `callback: caller lookup took ... seconds` or the error next to it.
+## Greeting and goodbye you can hear
+Three things went wrong in Preview and were fixed on 21 November:
+- **The greeting showed in the chat but was not spoken.** Text returned by a callback at the start of a call was displayed, not voiced. Now the agent itself says the greeting, with the exact words in the instruction.
+- **The spoken greeting had no name.** A callback that runs just before the model's first turn sets variables too late for that turn. Now a before-agent callback (the documented place for setting up state) looks the caller up first, and the before-model callback also writes the name into the model's own request.
+- **One call ended with no goodbye.** The model made the end-of-call tool call without any words. The instruction now insists, and the end-of-call callback adds the closing words if the model forgot.
+
+In the console, in the Root agent's Callbacks:
+1. **Before agent**: add a callback and paste `console/callbacks/before_agent_1_lookup_caller_on_start.py`. This is a new kind of callback for this agent.
+2. **Before model**: replace the code of the first callback with `console/callbacks/before_model_1_greet_known_caller.py`.
+3. **After model**: replace the code with `console/callbacks/after_model_1_save_transcript_on_end.py`.
+4. Replace the instruction with `console/root_instruction.txt`.
+
+Then start a call and listen: the greeting should say "Hello John" about 2 to 3 seconds in. The "Are you still there?" prompt and the system-error apology are also made by callbacks, so listen for those too and tell me if they are silent.
 
 ## Things to know
 - The email on file is stored in the variable `caller_email`, as you asked. The AI can read variables, so the instructions forbid saying it; that is a rule in text.

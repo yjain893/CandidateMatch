@@ -92,16 +92,6 @@ def get_shipping_address(order_number: str) -> dict:
       return _fail("not_verified", "The caller must be verified before this can be done.")
     return None
 
-  def _scope_clause():
-    # row level security: only records that belong to the verified caller
-    field = CFG.get("scope_field")
-    if not field:
-      return "", None
-    scope = context.variables.get("verified_scope_id")
-    if not scope:
-      return "", _fail("not_verified", "The caller must be verified before this can be done.")
-    return " AND " + field + " = '" + _soql_text(scope) + "'", None
-
   try:
     blocked = _require_verified()
     if blocked:
@@ -109,12 +99,9 @@ def get_shipping_address(order_number: str) -> dict:
     value = _normalize_key(ARGS["lookup"], CFG["lookup"])
     if not value:
       return _fail("invalid_input", "A valid value is needed to look this up.")
-    scope_sql, scope_err = _scope_clause()
-    if scope_err:
-      return scope_err
     fields = ["Id"] + list(CFG["return_fields"].values())
     soql = ("SELECT " + ", ".join(dict.fromkeys(fields)) + " FROM " + CFG["sobject"] +
-            " WHERE " + CFG["lookup"]["field"] + " = '" + _soql_text(value) + "'" + scope_sql + " LIMIT 1")
+            " WHERE " + CFG["lookup"]["field"] + " = '" + _soql_text(value) + "'" + " LIMIT 1")
     records, err = _query(soql)
     if err:
       return err

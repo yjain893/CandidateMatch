@@ -42,32 +42,27 @@
   "variableDeclarations": [{
     "name": "caller_account_id",
     "schema": {
-      "type": "STRING",
-      "default": null
+      "type": "STRING"
     }
   }, {
     "name": "caller_contact_id",
     "schema": {
-      "type": "STRING",
-      "default": null
+      "type": "STRING"
     }
   }, {
     "name": "caller_email",
     "schema": {
-      "type": "STRING",
-      "default": null
+      "type": "STRING"
     }
   }, {
     "name": "caller_name",
     "schema": {
-      "type": "STRING",
-      "default": null
+      "type": "STRING"
     }
   }, {
     "name": "caller_status",
     "schema": {
-      "type": "STRING",
-      "default": null
+      "type": "STRING"
     }
   }, {
     "name": "caller_verified",
@@ -84,8 +79,7 @@
   }, {
     "name": "last_order_id",
     "schema": {
-      "type": "STRING",
-      "default": null
+      "type": "STRING"
     }
   }, {
     "name": "telephony-caller-id",
@@ -98,18 +92,6 @@
     "schema": {
       "type": "NUMBER",
       "default": 0.0
-    }
-  }, {
-    "name": "verified_record_id",
-    "schema": {
-      "type": "STRING",
-      "default": null
-    }
-  }, {
-    "name": "verified_scope_id",
-    "schema": {
-      "type": "STRING",
-      "default": null
     }
   }],
   "defaultChannelProfile": {

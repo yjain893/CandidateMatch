@@ -12,7 +12,7 @@ Status is now: built and tested offline, see [README.md](README.md). The plan be
 5. **The permission set cannot limit editing to the shipping fields:** Salesforce has no field-level security for address fields. It grants object-level edit on Order; the limit comes from the tool and the connector schema.
 6. After reading the current address the agent asks "Would you like to change it?" (your script's "Yes." answers something).
 7. The greeting uses your wording, "Customer Service Number".
-8. **Tried in Preview on 21 November:** the full call worked (see README). The greeting callback was then hardened after one silent start: it always returns a greeting, logs the lookup time, and the instruction makes the model greet if the system did not.
+8. **Tried in Preview on 21 November:** the full call worked (see README). Two fixes followed: the greeting is now said by the agent (a callback's greeting showed as text but was not heard), and the end-of-call callback adds closing words if the model ends the call silently. The name was then missing from the spoken greeting (variables set during a model turn reach the model one turn late), so the lookup moved to a before-agent callback and the caller is also written into the model's first request.
 
 ## 1. Purpose
 A phone agent for Abbott customers that recognises the caller by the number they call from, greets them by first name, verifies them by email (3 tries), tells them the status of an order, changes the shipping address of an order, ends politely, and saves the whole call to Salesforce (already built and verified).
