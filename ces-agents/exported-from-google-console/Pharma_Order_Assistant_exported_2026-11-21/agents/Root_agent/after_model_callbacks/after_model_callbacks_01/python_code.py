@@ -18,6 +18,8 @@ def after_model_callback(
       reason = str(args.get("reason", ""))
       if args.get("session_escalated"):
         outcome = "escalated"
+      elif "verif" in reason.lower():
+        outcome = "verification failed"
       elif "tool_failure" in reason or "system" in reason.lower():
         outcome = "system error"
       else:

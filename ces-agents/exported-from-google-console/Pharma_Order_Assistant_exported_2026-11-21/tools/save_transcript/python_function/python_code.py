@@ -22,7 +22,7 @@ def save_transcript(outcome: str = "") -> dict:
                 'outcome': 'Outcome__c',
                 'caller_verified': 'Caller_Verified__c',
                 'agent_name': 'Agent_Name__c'},
-     'links': {'Order__c': 'verified_record_id', 'Account__c': 'verified_scope_id'},
+     'links': {'Order__c': 'last_order_id', 'Account__c': 'caller_account_id'},
      'redact_patterns': {'card number': '\\b(?:\\d[ -]?){13,16}\\b',
                          'social security number': '\\b\\d{3}-\\d{2}-\\d{4}\\b'},
      'max_chars': 120000,
@@ -60,6 +60,44 @@ def save_transcript(outcome: str = "") -> dict:
       print("tool: Salesforce returned status", resp.status_code)
       return None, _fail("salesforce_error", "The system is not available right now.", system=True, code=resp.status_code)
     return resp, None
+
+  def _check_value(spec, value):
+    # returns (clean_value, error_message)
+    kind = spec.get("type", "string")
+    if kind in ("string", "text", "phone", "email"):
+      text = str(value).strip()
+      limit = int(spec.get("max_length", 255))
+      if len(text) > limit:
+        return None, "too long (maximum %d characters)" % limit
+      return text, None
+    if kind == "number":
+      try:
+        num = float(value)
+      except (TypeError, ValueError):
+        return None, "must be a number"
+      return (int(num) if num == int(num) else num), None
+    if kind == "boolean":
+      if isinstance(value, bool):
+        return value, None
+      text = str(value).strip().lower()
+      if text in ("true", "yes", "1"):
+        return True, None
+      if text in ("false", "no", "0"):
+        return False, None
+      return None, "must be true or false"
+    if kind == "date":
+      text = str(value).strip()
+      parts = text.split("-")
+      if len(parts) == 3 and len(parts[0]) == 4 and parts[0].isdigit() and parts[1].isdigit() and parts[2].isdigit():
+        return text, None
+      return None, "must be a date like 2026-11-28"
+    if kind == "picklist":
+      allowed = spec.get("allowed") or []
+      for item in allowed:
+        if str(item).lower() == str(value).strip().lower():
+          return item, None
+      return None, "must be one of: " + ", ".join(str(a) for a in allowed)
+    return str(value).strip(), None
 
   import datetime
   import re
@@ -127,6 +165,8 @@ def save_transcript(outcome: str = "") -> dict:
     word = str(hint or "").lower()
     if "escalat" in word:
       return "Escalated"
+    if "verif" in word:
+      return "Verification failed"
     if "system" in word or "tool_failure" in word:
       return "System error"
     if "complet" in word or context.variables.get("caller_verified"):

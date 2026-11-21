@@ -3,6 +3,17 @@
 Status: PROPOSAL, no open decisions. Nothing is built, deployed or created in Salesforce.
 Decisions taken from you: follow the script exactly; **not** implemented: the hashed email (D1), the postal-code check (D2), account scoping (D3), unknown-caller verification (D4), status rules for address changes (D5), any Abbott or medical-topic rules (D6) and the extra guardrail policy (D7).
 
+## Build notes: what changed while building (21 November)
+Status is now: built and tested offline, see [README.md](README.md). The plan below is unchanged except for these points.
+1. **One connector lookup operation, not two.** An OpenAPI schema holds one operation per path and method, and both lookups use `GET /query`. The first draft silently lost one of them; the generator now refuses that. `find_order` serves both the order and the contact lookup (its pattern allows exactly those two query shapes).
+2. **One callback for greeting and lookup** (`greet_known_caller`) instead of two, so the greeting does not depend on a variable written by a tool being visible straight away. It stores `caller_status` (`known` or `unknown`) instead of a true/false value, because the AI is only shown a variable when it changes.
+3. **Unknown callers and the 3-try lockout are handled by the instructions, not by a callback**, so the call ends through `end_session` and the transcript is saved. Callback-made endings are not saved.
+4. `update_shipping_address` accepts any of street, city, state, postal code and country, and sends only what the caller gave.
+5. **The permission set cannot limit editing to the shipping fields:** Salesforce has no field-level security for address fields. It grants object-level edit on Order; the limit comes from the tool and the connector schema.
+6. After reading the current address the agent asks "Would you like to change it?" (your script's "Yes." answers something).
+7. The greeting uses your wording, "Customer Service Number".
+8. **Tried in Preview on 21 November:** the full call worked (see README). The greeting callback was then hardened after one silent start: it always returns a greeting, logs the lookup time, and the instruction makes the model greet if the system did not.
+
 ## 1. Purpose
 A phone agent for Abbott customers that recognises the caller by the number they call from, greets them by first name, verifies them by email (3 tries), tells them the status of an order, changes the shipping address of an order, ends politely, and saves the whole call to Salesforce (already built and verified).
 

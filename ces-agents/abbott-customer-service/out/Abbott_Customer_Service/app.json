@@ -1,0 +1,143 @@
+{
+  "name": "dd9e937c-8b5f-5e15-b611-8c8b4651750a",
+  "displayName": "Abbott Customer Service",
+  "description": "Phone assistant that recognises the caller by their number, verifies them by email, tells them the status of an order and changes the shipping address of an order. The whole call is saved to Salesforce when it ends.",
+  "rootAgent": "Root agent",
+  "audioProcessingConfig": {
+    "synthesizeSpeechConfigs": {
+      "en-US": {
+        "voice": "en-US-Chirp3-HD-Rasalgethi",
+        "speakingRate": 1.0
+      }
+    },
+    "bargeInConfig": {
+      "bargeInAwareness": true
+    },
+    "inactivityTimeout": "10s",
+    "ambientSoundConfig": {
+      "prebuiltAmbientSound": "office_3"
+    }
+  },
+  "loggingSettings": {
+    "redactionConfig": {
+      "enableRedaction": true
+    },
+    "audioRecordingConfig": {},
+    "bigqueryExportSettings": {},
+    "cloudLoggingSettings": {},
+    "conversationLoggingSettings": {
+      "retentionWindow": "31536000s"
+    },
+    "metricAnalysisSettings": {},
+    "unredactedBigqueryExportSettings": {}
+  },
+  "guardrails": [
+    "Default Safety Guardrail",
+    "Default Prompt Guardrail"
+  ],
+  "modelSettings": {
+    "model": "gemini-composite-v2"
+  },
+  "variableDeclarations": [
+    {
+      "name": "company_name",
+      "description": "Client name used in the greeting and instructions.",
+      "schema": {
+        "type": "STRING",
+        "default": "Abbott"
+      }
+    },
+    {
+      "name": "caller_status",
+      "description": "Set at the start of the call: known when the caller's number matched exactly one Salesforce Contact, otherwise unknown.",
+      "schema": {
+        "type": "STRING",
+        "default": ""
+      }
+    },
+    {
+      "name": "caller_name",
+      "description": "First name of the Contact that matched the caller's number.",
+      "schema": {
+        "type": "STRING",
+        "default": ""
+      }
+    },
+    {
+      "name": "caller_email",
+      "description": "Email address of that Contact, compared with what the caller says.",
+      "schema": {
+        "type": "STRING",
+        "default": ""
+      }
+    },
+    {
+      "name": "caller_contact_id",
+      "description": "Salesforce Id of the matched Contact.",
+      "schema": {
+        "type": "STRING",
+        "default": ""
+      }
+    },
+    {
+      "name": "caller_account_id",
+      "description": "Salesforce Id of the matched Contact's Account.",
+      "schema": {
+        "type": "STRING",
+        "default": ""
+      }
+    },
+    {
+      "name": "telephony-caller-id",
+      "description": "The caller's phone number. The phone platform fills it on a real phone call; in Preview set a test number as its default and clear it before go-live.",
+      "schema": {
+        "type": "STRING",
+        "default": ""
+      }
+    },
+    {
+      "name": "caller_verified",
+      "description": "True after verify_caller succeeded. Tools that need a verified caller check it.",
+      "schema": {
+        "type": "BOOLEAN",
+        "default": false
+      }
+    },
+    {
+      "name": "verification_attempts",
+      "description": "Failed verification attempts so far in this session.",
+      "schema": {
+        "type": "NUMBER",
+        "default": 0
+      }
+    },
+    {
+      "name": "last_order_id",
+      "description": "Salesforce Id of the order last looked up or changed (linked on the call transcript).",
+      "schema": {
+        "type": "STRING",
+        "default": ""
+      }
+    }
+  ],
+  "defaultChannelProfile": {
+    "personaProperty": {
+      "persona": "CHATTY"
+    },
+    "disableDtmf": false,
+    "disableBargeInControl": false
+  },
+  "timeZoneSettings": {
+    "timeZone": "America/Los_Angeles"
+  },
+  "errorHandlingSettings": {
+    "errorHandlingStrategy": "FALLBACK_RESPONSE",
+    "fallbackResponseConfig": {
+      "maxFallbackAttempts": 1
+    },
+    "endSessionConfig": {
+      "escalateSession": true
+    }
+  },
+  "toolExecutionMode": "SEQUENTIAL"
+}

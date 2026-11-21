@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Salesforce order lookup",
+    "title": "Salesforce customer lookups",
     "version": "1.0.0"
   },
   "servers": [
@@ -13,17 +13,17 @@
     "/query": {
       "get": {
         "operationId": "find_order",
-        "summary": "Runs the fixed order lookup used by authenticate_user. Not for direct use by the agent.",
-        "description": "Runs the fixed order lookup used by authenticate_user. Not for direct use by the agent.",
+        "summary": "Runs the two fixed lookups used by the Python tools: an order by its number, and the contacts whose phone ends with four given digits. Not for direct use by the agent.",
+        "description": "Runs the two fixed lookups used by the Python tools: an order by its number, and the contacts whose phone ends with four given digits. Not for direct use by the agent.",
         "parameters": [
           {
             "name": "q",
             "in": "query",
             "required": true,
-            "description": "The fixed order lookup query, built by the authenticate_user tool.",
+            "description": "One of the two fixed lookups, built by the Python tools: an order by number, or contacts by the last four digits of a phone.",
             "schema": {
               "type": "string",
-              "pattern": "^SELECT [A-Za-z0-9_., ]+ FROM Order WHERE OrderNumber = '[0-9]{1,8}' LIMIT 1$"
+              "pattern": "^(SELECT [A-Za-z0-9_., ]+ FROM Order WHERE OrderNumber = '[0-9]{1,8}' LIMIT 1|SELECT [A-Za-z0-9_., ]+ FROM Contact WHERE AccountId != null AND \\(Phone LIKE '%[0-9]{4}' OR MobilePhone LIKE '%[0-9]{4}'\\) LIMIT [0-9]{1,2})$"
             }
           }
         ],
@@ -64,16 +64,35 @@
                           "TotalAmount": {
                             "type": "number"
                           },
+                          "ShippingStreet": {
+                            "type": "string"
+                          },
+                          "ShippingCity": {
+                            "type": "string"
+                          },
+                          "ShippingState": {
+                            "type": "string"
+                          },
+                          "ShippingPostalCode": {
+                            "type": "string"
+                          },
+                          "ShippingCountry": {
+                            "type": "string"
+                          },
+                          "FirstName": {
+                            "type": "string"
+                          },
+                          "Email": {
+                            "type": "string"
+                          },
                           "AccountId": {
                             "type": "string"
                           },
-                          "Account": {
-                            "type": "object",
-                            "properties": {
-                              "Phone": {
-                                "type": "string"
-                              }
-                            }
+                          "Phone": {
+                            "type": "string"
+                          },
+                          "MobilePhone": {
+                            "type": "string"
                           }
                         }
                       }
@@ -82,6 +101,62 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Salesforce returned an error"
+          }
+        }
+      }
+    },
+    "/sobjects/Order/{id}": {
+      "patch": {
+        "operationId": "update_order_address",
+        "summary": "Changes the shipping address of one order. Used only by the update_shipping_address tool.",
+        "description": "Changes the shipping address of one order. Used only by the update_shipping_address tool.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ShippingStreet": {
+                    "type": "string",
+                    "description": "Street and number"
+                  },
+                  "ShippingCity": {
+                    "type": "string"
+                  },
+                  "ShippingState": {
+                    "type": "string"
+                  },
+                  "ShippingPostalCode": {
+                    "type": "string"
+                  },
+                  "ShippingCountry": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Salesforce record Id",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9]{15,18}$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Updated"
           },
           "default": {
             "description": "Salesforce returned an error"
