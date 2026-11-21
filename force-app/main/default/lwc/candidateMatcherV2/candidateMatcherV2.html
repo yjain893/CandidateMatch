@@ -25,12 +25,12 @@
                 </div>
 
                 <div class="field">
-                    <lightning-input label="City" value={cities} placeholder="Jaipur, Pune" onchange={handleCities}></lightning-input>
+                    <lightning-input label="City" value={cities} placeholder="Toronto, Ottawa" onchange={handleCities}></lightning-input>
                     <p class="help">Comma separated for several</p>
                 </div>
 
                 <div class="field">
-                    <lightning-input type="number" label="Max expected salary ($)" value={maxSalary} onchange={handleSalary}></lightning-input>
+                    <lightning-input type="number" label="Max expected salary (CAD)" value={maxSalary} onchange={handleSalary}></lightning-input>
                 </div>
 
                 <div class="field">
@@ -80,12 +80,105 @@
                     </div>
                 </div>
 
-                <div class="buttons">
-                    <lightning-button variant="brand" label={applyLabel} onclick={handleApply} disabled={applyDisabled}></lightning-button>
-                    <lightning-button label="Clear" onclick={handleClear}></lightning-button>
+                <!-- Skills: the job's required skills are selected for you, the good-to-have ones are not -->
+                <div class="field">
+                    <div class="label-row">
+                        <span class="field-label">Skills</span>
+                        <span class="pill">prefilled from the job</span>
+                    </div>
+                    <template if:false={hasSkillRows}>
+                        <p class="help">{skillsEmptyText}</p>
+                    </template>
+                    <template if:true={hasRequired}>
+                        <div class="grp-h">
+                            <span>Required by the job</span>
+                            <span class="grp-r">{countColumnHeader}</span>
+                        </div>
+                        <template for:each={requiredRows} for:item="row">
+                            <button key={row.name} type="button" class={row.className} data-name={row.name}
+                                    aria-pressed={row.pressed} title={row.title} onclick={handleSkillClick}>
+                                <span class="box">
+                                    <lightning-icon icon-name="utility:check" variant="inverse" size="xx-small"></lightning-icon>
+                                </span>
+                                <span class="srow-name">{row.name}</span>
+                                <span class="cn">{row.countText}</span>
+                                <template if:true={row.showBar}>
+                                    <span class="rbar"><span class="rbar-fill" style={row.barStyle}></span></span>
+                                </template>
+                            </button>
+                        </template>
+                    </template>
+                    <template if:true={hasNice}>
+                        <div class="grp-h">
+                            <span>Good to have</span>
+                            <template if:false={hasRequired}>
+                                <span class="grp-r">{countColumnHeader}</span>
+                            </template>
+                        </div>
+                        <template for:each={niceRows} for:item="row">
+                            <button key={row.name} type="button" class={row.className} data-name={row.name}
+                                    aria-pressed={row.pressed} title={row.title} onclick={handleSkillClick}>
+                                <span class="box">
+                                    <lightning-icon icon-name="utility:check" variant="inverse" size="xx-small"></lightning-icon>
+                                </span>
+                                <span class="srow-name">{row.name}</span>
+                                <span class="cn">{row.countText}</span>
+                                <template if:true={row.showBar}>
+                                    <span class="rbar"><span class="rbar-fill" style={row.barStyle}></span></span>
+                                </template>
+                            </button>
+                        </template>
+                    </template>
                 </div>
-                <p class="count" aria-live="polite">{countText}</p>
-                <p class="help">{notParsedText}</p>
+
+                <!-- Date available: how soon the candidate can start -->
+                <div class="field">
+                    <span class="field-label">Date available</span>
+                    <div class="tiles tiles-two">
+                        <template for:each={dateTiles} for:item="tile">
+                            <button key={tile.key} type="button" class={tile.className} data-days={tile.days}
+                                    aria-pressed={tile.pressed} title={tile.title} disabled={tile.disabled} onclick={handleDateClick}>
+                                <span>{tile.label}</span>
+                                <template if:true={tile.hasSub}>
+                                    <span class="tile-sub">{tile.sub}</span>
+                                </template>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- The count and the buttons stay in view while the filters are scrolled -->
+                <div class="actions">
+                    <template if:true={showSummary}>
+                        <div class={summaryClass} role="status" aria-live="polite">
+                            <lightning-icon icon-name="utility:groups" size="small" class="sum-icon"></lightning-icon>
+                            <div class="sum-text">
+                                <div class="sum-main">
+                                    <template if:true={summaryNumber}>
+                                        <span class="sum-num">{summaryNumber}</span>
+                                    </template>
+                                    <span>{summaryLabel}</span>
+                                </div>
+                                <template if:true={summarySub}>
+                                    <div class="sum-sub">{summarySub}</div>
+                                </template>
+                                <template if:true={summaryTime}>
+                                    <div class="sum-sub">{summaryTime}</div>
+                                </template>
+                                <template if:true={notParsedText}>
+                                    <div class="sum-sub">{notParsedText}</div>
+                                </template>
+                            </div>
+                        </div>
+                        <template if:true={capWarnText}>
+                            <p class="warnline">{capWarnText}</p>
+                        </template>
+                    </template>
+                    <div class="buttons">
+                        <lightning-button variant="brand" label={applyLabel} onclick={handleApply} disabled={applyDisabled}></lightning-button>
+                        <lightning-button label="Clear" onclick={handleClear}></lightning-button>
+                    </div>
+                </div>
             </div>
 
             <!-- ===================== Right: results ===================== -->

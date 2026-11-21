@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Skill_Map__c</fullName>
+    <label>Skill Map (AI)</label><type>LongTextArea</type><length>65536</length><visibleLines>6</visibleLines>
+    <description>Every required and nice-to-have skill with the other names a resume could use for it, as JSON: {"REST API": ["REST API Integration", "REST APIs"]}. Written with the job requirements. The Candidate Matcher V2 skill filter and counts use it, so "LWC" counts for "Lightning Web Components". It can be corrected by hand.</description>
+    <required>false</required>
+</CustomField>

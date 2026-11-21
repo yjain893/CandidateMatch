@@ -34,7 +34,7 @@
 }
 .help { font-size: 0.7rem; color: var(--cm-muted); margin-top: 0.15rem; min-height: 0.9rem; }
 .count { font-size: 0.8rem; color: var(--cm-muted); margin-top: 0.5rem; }
-.buttons { display: flex; gap: 0.5rem; margin-top: 1.1rem; }
+.buttons { display: flex; gap: 0.5rem; }
 
 .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; }
 .tile {
@@ -55,6 +55,69 @@
 .tile-on { background: var(--cm-accent-bg); border-color: var(--cm-accent); color: var(--cm-accent); }
 .tile-on::after { content: "\2713"; position: absolute; top: 2px; right: 6px; font-size: 0.65rem; }
 .tile-icon { --slds-c-icon-color-foreground-default: currentColor; }
+
+/* date available: two tiles per row, each with a small line for how many candidates it would leave */
+.tiles-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tile-sub { font-size: 0.7rem; color: var(--cm-muted); }
+.tile-on .tile-sub { color: var(--cm-accent); }
+.tile-zero, .tile-zero .tile-sub { color: var(--cm-muted); }
+.tile:disabled { cursor: not-allowed; color: var(--cm-muted); }
+.tile:disabled:hover { background: transparent; }
+
+/* skills */
+.label-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.25rem; }
+.label-row .field-label { margin-bottom: 0; }
+.pill { font-size: 0.7rem; padding: 0.05rem 0.5rem; border-radius: 0.8rem; background: var(--cm-accent-bg); color: var(--cm-accent); white-space: nowrap; }
+.grp-h { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; margin: 0.5rem 0 0.3rem; font-size: 0.72rem; color: var(--cm-muted); }
+.grp-r { font-size: 0.7rem; padding-right: calc(0.6rem + 1px); white-space: nowrap; }
+.srow {
+    display: grid;
+    grid-template-columns: 1rem minmax(0, 1fr) auto;
+    column-gap: 0.5rem;
+    row-gap: 0.3rem;
+    align-items: center;
+    width: 100%;
+    margin: 0 0 0.3rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--cm-border);
+    border-radius: 0.4rem;
+    background: #fff;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.srow:hover { background: var(--cm-surface); }
+.srow-on { background: var(--cm-accent-bg); border-color: var(--cm-accent); color: var(--cm-accent); }
+.srow-on:hover { background: var(--cm-accent-bg); }
+.srow-zero { color: var(--cm-muted); }
+.srow-on .box { background: var(--cm-accent); border-color: var(--cm-accent); }
+.srow-on .box lightning-icon { visibility: visible; }
+.srow-name { min-width: 0; overflow-wrap: anywhere; }
+.cn { font-size: 0.72rem; color: var(--cm-muted); white-space: nowrap; }
+.srow-on .cn { color: var(--cm-accent); }
+.rbar { grid-column: 2 / 4; display: block; height: 4px; border-radius: 2px; background: #e5e5e5; overflow: hidden; }
+.rbar-fill { display: block; height: 100%; background: var(--cm-accent); }
+
+/* the count and the buttons stay in view while the filters are scrolled */
+.actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    margin-top: 1rem;
+    padding: 0.7rem 0 0.25rem;
+    background: #fff;
+    border-top: 1px solid var(--cm-border);
+}
+.sum { display: flex; gap: 0.6rem; align-items: center; margin-bottom: 0.6rem; }
+.sum-busy .sum-num { color: var(--cm-muted); }
+.sum-none .sum-main { font-weight: 500; }.sum-icon { flex: none; --slds-c-icon-color-foreground-default: var(--cm-accent); }
+.sum-text { min-width: 0; }
+.sum-main { font-size: 0.8125rem; }
+.sum-num { font-size: 1.4rem; font-weight: 500; margin-right: 0.3rem; }
+.sum-sub { font-size: 0.72rem; color: var(--cm-muted); }
+.warnline { margin: 0 0 0.6rem; font-size: 0.72rem; padding: 0.3rem 0.5rem; border-radius: 0.25rem; background: #fef0e0; color: #8a4a00; }
 
 /* role types: dropdown with search and checkboxes */
 .ms { position: relative; }

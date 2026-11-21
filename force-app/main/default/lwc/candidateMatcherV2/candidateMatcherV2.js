@@ -5,14 +5,22 @@ import getOptions from '@salesforce/apex/CandidateMatcherController.getOptions';
 import getJobFilters from '@salesforce/apex/CandidateMatcherController.getJobFilters';
 import startMatching from '@salesforce/apex/CandidateMatcherController.startMatching';
 import countMatches from '@salesforce/apex/CandidateMatcherV2Controller.countMatches';
+import getJobSkills from '@salesforce/apex/CandidateMatcherV2Controller.getJobSkills';
 import getResults from '@salesforce/apex/CandidateMatcherV2Controller.getResults';
 
 const POLL_MS = 4000;
 const MAX_POLLS = 450;              // 30 minutes at 4 seconds
 const SLOW_AFTER_MS = 120000;       // no candidate finished for 2 minutes: tell the user it is slow
 const COUNT_DEBOUNCE_MS = 350;      // wait until the user stops changing filters before counting
+const SECONDS_PER_CANDIDATE = 5;    // placeholder for "About N min to score": set it to the real measured seconds per candidate
 const PENDING = ['Queued for scoring', 'Scoring', 'Reading resume'];
 const MODE_ICONS = { Remote: 'utility:home', 'On-site': 'utility:company', Hybrid: 'utility:sync' };
+const DATE_WINDOWS = [                // days from today, same values as CandidateMatcherV2Controller.DATE_WINDOWS
+    { days: 0, label: 'Immediately' },
+    { days: 14, label: 'Within 2 weeks' },
+    { days: 31, label: 'Within 1 month' },
+    { days: 62, label: 'Within 2 months' }
+];
 const GREEN = '#2e844a';
 const AMBER = '#fe9339';
 const GREY = '#9a9ea3';
@@ -20,6 +28,7 @@ const GREY = '#9a9ea3';
 export default class CandidateMatcherV2 extends NavigationMixin(LightningElement) {
     // ----- filters (pre-filled from the job, editable by the user) -----
     jobId;
+    jobLoading = false;
     workModeOptions = [];
     roleOptions = [];
     workModes = [];
@@ -29,8 +38,21 @@ export default class CandidateMatcherV2 extends NavigationMixin(LightningElement
     rolesOpen = false;
     roleSearch = '';
 
-    // ----- live "N candidates match" -----
+    // ----- skills (listed from the job, required ones start selected) and date available -----
+    requiredSkills = [];
+    niceSkills = [];
+    selectedSkills = [];
+    availableDays = null;           // null = any date, 0 = available now, 14 = within 2 weeks ...
+
+    // ----- live "N candidates match" and the number next to every skill and date -----
     matchCount = 0;
+    matchKnown = false;             // false: cannot be counted because too many candidates fit the other filters
+    poolCount = 0;                  // fit the work mode, city, salary and role filters
+    skillMatched = 0;               // also have every selected skill (before the date)
+    facetsKnown = false;
+    tooBroad = false;
+    skillFacets = {};               // skill name -> candidates left if it were added (selected: left if it were removed)
+    dateFacets = {};                // days -> candidates with the selected skills available within that many days
     notParsed = 0;
     cappedCount = false;
     cap = 200;
@@ -147,29 +169,30 @@ export default class CandidateMatcherV2 extends NavigationMixin(LightningElement
             workModes: this.workModes,
             cities: this.cities,
             maxSalary: this.maxSalary,
-            roleTypes: this.roles
+            roleTypes: this.roles,
+            jobId: this.jobId,                                            // the server reads this job's skill map (other names for each skill)
+            skills: this.selectedSkills,
+            skillOptions: [...this.requiredSkills, ...this.niceSkills],   // so the server can count every skill on screen
+            availableWithinDays: this.availableDays
         });
     }
     get applyDisabled() {
-        return !this.jobId || this.busy || this.isRunning;
+        return !this.jobId || this.busy || this.isRunning || this.skillsBlocked || this.noMatches;
+    }
+    /** Everything was counted and nobody matches: the screen explains why instead of showing zeros. */
+    get noMatches() {
+        return this.countKnown && this.matchKnown && this.matchCount === 0;
+    }
+    /** Candidates fit the other filters, skills are selected, and not one candidate has all of them. */
+    get skillsEmptyTheList() {
+        return this.facetsKnown && this.poolCount > 0 && this.selectedSkills.length > 0 && this.skillMatched === 0;
     }
     get applyLabel() {
         return this.isRunning ? 'Scoring...' : 'Apply filters';
     }
-    get countText() {
-        if (!this.jobId) {
-            return '';
-        }
-        if (this.counting) {
-            return 'Counting...';
-        }
-        if (!this.countKnown) {
-            return '';
-        }
-        if (this.cappedCount) {
-            return `${this.cap}+ candidates match. Only the first ${this.cap} will be scored.`;
-        }
-        return `${this.matchCount} ${this.matchCount === 1 ? 'candidate matches' : 'candidates match'}`;
+    /** Skills are selected but there are too many candidates to check them: the filters must be narrowed first. */
+    get skillsBlocked() {
+        return this.countKnown && this.tooBroad && this.selectedSkills.length > 0;
     }
     get notParsedText() {
         return !this.counting && this.countKnown && this.notParsed
@@ -177,7 +200,184 @@ export default class CandidateMatcherV2 extends NavigationMixin(LightningElement
             : '';
     }
 
-    // ----- job lookup: pre-fills the filters -----
+    // ----- the count and what it is made of (pinned above the buttons) -----
+    get showSummary() {
+        return !!this.jobId && (this.countKnown || this.counting);
+    }
+    get summaryClass() {
+        if (this.counting) {
+            return 'sum sum-busy';
+        }
+        return this.noMatches ? 'sum sum-none' : 'sum';
+    }
+    get summaryNumber() {
+        if (!this.countKnown || this.noMatches) {
+            return '';
+        }
+        return this.formatCount(this.matchKnown ? this.matchCount : this.poolCount);
+    }
+    get summaryLabel() {
+        if (!this.countKnown) {
+            return 'Counting...';
+        }
+        if (this.noMatches) {
+            return 'No candidates match all of these filters';
+        }
+        if (!this.matchKnown) {
+            return 'candidates fit your other filters';
+        }
+        return this.matchCount === 1 ? 'candidate matches' : 'candidates match';
+    }
+    get summarySub() {
+        if (!this.countKnown) {
+            return '';
+        }
+        if (!this.matchKnown) {
+            return 'That is too many to check their skills. Narrow the city, work mode, salary or role types.';
+        }
+        if (this.noMatches) {
+            return this.noMatchReason;
+        }
+        return `of ${this.formatCount(this.poolCount)} that fit your other filters`;
+    }
+    /** Which filter empties the list: the other filters, the skills, or the date. */
+    get noMatchReason() {
+        if (this.poolCount === 0) {
+            return 'Nobody fits the work mode, city, salary and role filters. Loosen one of them.';
+        }
+        const fit = `${this.formatCount(this.poolCount)} ${this.poolCount === 1 ? 'candidate fits' : 'candidates fit'} your other filters`;
+        const haveSkills = this.selectedSkills.length > 0 && this.facetsKnown;
+        if (haveSkills && this.skillMatched === 0) {
+            return `${fit}, but none has every selected skill.`;
+        }
+        if (this.availableDays !== null) {
+            return haveSkills
+                ? `${this.formatCount(this.skillMatched)} have every selected skill, but none is available by that date.`
+                : `${fit}, but none is available by that date.`;
+        }
+        return `${fit}, but none matches the rest.`;
+    }
+    get summaryTime() {
+        if (!this.countKnown || !this.matchKnown || this.matchCount === 0) {
+            return '';
+        }
+        const seconds = Math.min(this.matchCount, this.cap) * SECONDS_PER_CANDIDATE;
+        return `About ${Math.max(1, Math.round(seconds / 60))} min to score`;
+    }
+    get capWarnText() {
+        return this.countKnown && this.cappedCount
+            ? `${this.cap}+ candidates match. Only the first ${this.cap} will be scored.`
+            : '';
+    }
+
+    // ----- skills -----
+    get hasRequired() {
+        return this.requiredSkills.length > 0;
+    }
+    get hasNice() {
+        return this.niceSkills.length > 0;
+    }
+    get hasSkillRows() {
+        return this.hasRequired || this.hasNice;
+    }
+    get skillsEmptyText() {
+        if (!this.jobId) {
+            return 'Pick a job to load its skills.';
+        }
+        return this.jobLoading
+            ? 'Loading skills...'
+            : 'No skills have been read from this job yet. They are extracted from the job description in the background.';
+    }
+    get countColumnHeader() {
+        if (!this.facetsKnown || !this.matchKnown) {
+            return '';
+        }
+        return this.noMatches ? '' : 'Candidates who have it';
+    }
+    get requiredRows() {
+        return this.skillRows(this.requiredSkills);
+    }
+    get niceRows() {
+        return this.skillRows(this.niceSkills);
+    }
+    /**
+     * One row per skill. Selected: "All 66" (everyone listed has it). Not selected: "35 of 66", the candidates that would be left
+     * if it were added. The bar shows the same share.
+     */
+    skillRows(names) {
+        const total = this.matchCount;
+        const known = this.facetsKnown && this.matchKnown;
+        return names.map((name) => {
+            const selected = this.selectedSkills.includes(name);
+            const n = this.skillFacets[name];
+            if (this.noMatches && known) {
+                // Nobody matches, so any number here is either 0 or contradicts the message: the rows show only the selection.
+                return {
+                    name,
+                    className: selected ? 'srow srow-on' : 'srow',
+                    pressed: String(selected),
+                    countText: '',
+                    showBar: false,
+                    barStyle: 'width:0%',
+                    title: name
+                };
+            }
+            const hasNumber = known && n !== undefined;
+            let countText = '';
+            let width = selected ? 100 : 0;
+            let title = name;
+            if (hasNumber && selected) {
+                countText = `All ${this.formatCount(total)}`;
+                title = `All ${this.formatCount(total)} matching candidates have ${name}. Removing it would give ${this.formatCount(n)} candidates.`;
+            } else if (hasNumber) {
+                countText = `${this.formatCount(n)} of ${this.formatCount(total)}`;
+                width = total > 0 ? Math.round((100 * n) / total) : 0;
+                title = `${this.formatCount(n)} of the ${this.formatCount(total)} matching candidates have ${name}. Adding it leaves ${this.formatCount(n)}.`;
+            }
+            const zero = hasNumber && !selected && n === 0;
+            return {
+                name,
+                className: selected ? 'srow srow-on' : zero ? 'srow srow-zero' : 'srow',
+                pressed: String(selected),
+                countText,
+                showBar: true,
+                barStyle: `width:${width}%`,
+                title
+            };
+        });
+    }
+
+    // ----- date available -----
+    get dateTiles() {
+        // when nobody has every selected skill, every tile would say 0, so the tiles show no numbers at all
+        const skillsEmptyTheList = this.skillsEmptyTheList || (this.facetsKnown && this.poolCount === 0);
+        return DATE_WINDOWS.map((w) => {
+            const selected = this.availableDays === w.days;
+            const n = this.dateFacets[w.days];
+            const hasNumber = !!this.jobId && this.facetsKnown && n !== undefined && !skillsEmptyTheList;
+            const zero = hasNumber && !selected && n === 0;
+            let title = '';
+            if (hasNumber) {
+                const day = new Date();
+                day.setDate(day.getDate() + w.days);
+                const dayText = day.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
+                title = `Available by ${dayText}: ${this.formatCount(n)} of the ${this.formatCount(this.skillMatched)} candidates who have your selected skills.`;
+            }
+            return {
+                key: String(w.days),
+                days: w.days,
+                label: w.label,
+                className: selected ? 'tile tile-on' : zero ? 'tile tile-zero' : 'tile',
+                pressed: String(selected),
+                disabled: !this.jobId,
+                hasSub: hasNumber,
+                sub: hasNumber ? `${this.formatCount(n)} ${n === 1 ? 'candidate' : 'candidates'}` : '',
+                title
+            };
+        });
+    }
+
+    // ----- job lookup: pre-fills the filters and the skills -----
     handleJobChange(event) {
         this.jobId = event.detail.recordId;
         this.stopPolling();
@@ -192,20 +392,41 @@ export default class CandidateMatcherV2 extends NavigationMixin(LightningElement
         this.emptyMessage = '';
         this.openId = null;
         this.rolesOpen = false;
+        this.requiredSkills = [];
+        this.niceSkills = [];
+        this.selectedSkills = [];
+        this.availableDays = null;
+        this.resetCounts();
         if (!this.jobId) {
+            this.jobLoading = false;
             this.clearFilters();
             return;
         }
-        getJobFilters({ jobId: this.jobId })
-            .then((f) => {
+        const jobId = this.jobId;
+        this.jobLoading = true;
+        this.counting = true;
+        Promise.all([getJobFilters({ jobId }), getJobSkills({ jobId })])
+            .then(([f, s]) => {
+                if (jobId !== this.jobId) {
+                    return;                             // another job was picked in the meantime
+                }
                 this.workModes = f.workModes || [];
                 this.cities = f.city || '';
                 this.maxSalary = f.maxSalary === undefined ? null : f.maxSalary;
                 this.roles = f.roleTypes || [];
+                this.requiredSkills = s.required || [];
+                this.niceSkills = s.niceToHave || [];
+                this.selectedSkills = [...this.requiredSkills];     // the job's required skills start selected
+                this.jobLoading = false;
                 this.scheduleCount();
             })
-            .catch((e) => this.toast('Could not read the job', this.message(e), 'error'));
-        this.scheduleCount();
+            .catch((e) => {
+                if (jobId === this.jobId) {
+                    this.jobLoading = false;
+                    this.counting = false;
+                }
+                this.toast('Could not read the job', this.message(e), 'error');
+            });
     }
 
     // ----- filter edits (do not touch the job record) -----
@@ -251,6 +472,18 @@ export default class CandidateMatcherV2 extends NavigationMixin(LightningElement
         this.roles = this.roles.filter((r) => r !== value);
         this.scheduleCount();
     }
+    handleSkillClick(event) {
+        const name = event.currentTarget.dataset.name;
+        this.selectedSkills = this.selectedSkills.includes(name)
+            ? this.selectedSkills.filter((s) => s !== name)
+            : [...this.selectedSkills, name];
+        this.scheduleCount();
+    }
+    handleDateClick(event) {
+        const days = Number(event.currentTarget.dataset.days);
+        this.availableDays = this.availableDays === days ? null : days;     // click the selected one again to clear it
+        this.scheduleCount();
+    }
     handleClear() {
         this.clearFilters();
         this.scheduleCount();
@@ -261,9 +494,27 @@ export default class CandidateMatcherV2 extends NavigationMixin(LightningElement
         this.maxSalary = null;
         this.roles = [];
         this.roleSearch = '';
+        this.selectedSkills = [];
+        this.availableDays = null;
     }
 
     // ----- live count (waits until the user stops changing filters) -----
+    resetCounts() {
+        clearTimeout(this.countTimer);
+        this.countSeq += 1;
+        this.counting = false;
+        this.countKnown = false;
+        this.matchCount = 0;
+        this.matchKnown = false;
+        this.poolCount = 0;
+        this.skillMatched = 0;
+        this.facetsKnown = false;
+        this.tooBroad = false;
+        this.skillFacets = {};
+        this.dateFacets = {};
+        this.notParsed = 0;
+        this.cappedCount = false;
+    }
     scheduleCount() {
         clearTimeout(this.countTimer);
         this.countSeq += 1;                        // anything still on its way is out of date now
@@ -283,7 +534,18 @@ export default class CandidateMatcherV2 extends NavigationMixin(LightningElement
                 if (seq !== this.countSeq) {
                     return;
                 }
-                this.matchCount = r.matched;
+                this.matchKnown = r.matched !== null && r.matched !== undefined;
+                this.matchCount = this.matchKnown ? r.matched : 0;
+                this.poolCount = r.pool || 0;
+                this.skillMatched = r.skillMatched || 0;
+                this.facetsKnown = r.facets === true;
+                this.tooBroad = r.tooBroad === true;
+                const bySkill = {};
+                (r.skills || []).forEach((s) => { bySkill[s.name] = s.count; });
+                this.skillFacets = bySkill;
+                const byDays = {};
+                (r.dates || []).forEach((d) => { byDays[d.days] = d.count; });
+                this.dateFacets = byDays;
                 this.notParsed = r.notParsed;
                 this.cappedCount = r.capped;
                 this.cap = r.cap || this.cap;
@@ -530,13 +792,14 @@ export default class CandidateMatcherV2 extends NavigationMixin(LightningElement
         return `${this.scoredCount} / ${this.total}`;
     }
     get topMatch() {
-        let best = null;
-        this.rawRows.forEach((r) => {
-            if (r.status === 'Scored' && r.score !== null && r.score !== undefined && (!best || r.score > best.score)) {
-                best = r;
-            }
-        });
-        return best ? best.name : '-';
+        const scored = this.rawRows.filter((r) => r.status === 'Scored' && r.score !== null && r.score !== undefined);
+        if (scored.length === 0) {
+            return '-';
+        }
+        // Several candidates can share the top score: name the strongest of them (skills, then experience, then name) and say how many tie.
+        const best = scored.slice().sort((a, b) => this.compareMerit(a, b))[0];
+        const tied = scored.filter((r) => Number(r.score) === Number(best.score)).length - 1;
+        return tied > 0 ? `${best.name} +${tied} tied` : best.name;
     }
 
     handleSearch(event) {
@@ -589,12 +852,9 @@ export default class CandidateMatcherV2 extends NavigationMixin(LightningElement
             if (y === null) { return -1; }
             return (x - y) * dir;
         };
-        // Highest score first (rows that are not scored yet go last). Also the tie-break for the other sorts.
-        const byScore = cmpNullsLast(
-            a.status === 'Scored' ? num(a.score) : null,
-            b.status === 'Scored' ? num(b.score) : null,
-            -1
-        );
+        // Highest score first (rows that are not scored yet go last), then the stronger skills, then more relevant experience.
+        // Also the tie-break for the other sorts.
+        const byScore = this.compareMerit(a, b) || 0;
         let c = 0;
         if (this.sort === 'exp') {
             c = cmpNullsLast(num(a.experienceYears), num(b.experienceYears), -1);
@@ -604,6 +864,20 @@ export default class CandidateMatcherV2 extends NavigationMixin(LightningElement
             c = byScore;
         }
         return c || byScore || byName;
+    }
+
+    /** Best first: higher score, then higher skills score, then higher experience score. Rows that are not scored yet go last. 0 = tied. */
+    compareMerit(a, b) {
+        const num = (row, key) => (row.status === 'Scored' && row[key] !== null && row[key] !== undefined ? Number(row[key]) : null);
+        for (const key of ['score', 'skillsScore', 'experienceScore']) {
+            const x = num(a, key);
+            const y = num(b, key);
+            if (x === null && y === null) { continue; }
+            if (x === null) { return 1; }
+            if (y === null) { return -1; }
+            if (x !== y) { return y - x; }
+        }
+        return 0;
     }
 
     /** Adds everything the card needs to show: ring, badges, bars, chips, the details text. */
@@ -685,6 +959,10 @@ export default class CandidateMatcherV2 extends NavigationMixin(LightningElement
             return '';
         }
         return `${Number(Number(v).toFixed(1))} yrs`;
+    }
+    /** 1234 -> "1,234" */
+    formatCount(v) {
+        return Number(v).toLocaleString('en-US');
     }
 
     toast(title, message, variant) {

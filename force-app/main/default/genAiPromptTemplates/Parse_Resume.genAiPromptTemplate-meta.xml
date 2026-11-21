@@ -11,7 +11,7 @@ Return ONLY one valid JSON object. No markdown, no commentary. Use exactly this 
 {
   "summary": "2-3 sentence professional summary, without the candidate's name",
   "confidence": "high | medium | low  (low if the PDF is scanned, garbled, partial or not a resume)",
-  "skills": [{"name": "Java", "years": 5}],
+  "skills": [{"name": "LWC", "canonical": "Lightning Web Components", "years": 5}],
   "education": [{"institution": "", "degree": "", "fieldOfStudy": "", "startDate": "YYYY-MM-DD or YYYY-MM or YYYY or null", "endDate": "same format or null"}],
   "employment": [{"employer": "", "role": "", "startDate": "same format", "endDate": null, "description": "max 400 characters"}]
 }
@@ -22,6 +22,11 @@ Rules:
   appears with several roles, create one entry per role.
 - skills: individual technologies, tools, languages, methods and certifications as short canonical names
   (e.g. "Salesforce", "Apex", "SQL", "Project Management"). Maximum 40. "years" only if stated or clearly derivable from dates, else null.
+- For EVERY skill also give "canonical", never leave it out: the standard full name of that same skill as it is usually written in job postings (Lightning Web
+  Components for LWC, REST API for REST API Integration, Salesforce Platform Developer I for a Platform Developer I certification). Use the same text as "name" when
+  it already is the standard name. Write it the same way every time for the same skill: singular (REST API, not REST APIs), the plain name without
+  words such as "experience", "skills" or "knowledge", and no text in brackets. Keep a version or level when the resume states one. It must be the same skill:
+  never a broader category (not "Salesforce" for "Apex") and never a related but different skill (not "JavaScript" for "Java").
 - endDate is null for a current role.
 - Set confidence to low whenever you could not read the document reliably. Prefer fewer correct items over many doubtful ones.
 - Do NOT output the candidate's name, address, phone, email, age, gender, nationality, photo or any other personal data.</content>

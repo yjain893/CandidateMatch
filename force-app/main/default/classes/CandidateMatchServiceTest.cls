@@ -34,6 +34,41 @@ private class CandidateMatchServiceTest {
         System.assertEquals(null, noFit.Fit_Score__c);
     }
 
+    @IsTest static void halvesRoundUpSoAHigherScoreNeverTiesWithALowerOne() {
+        // skills 45%, experience 25%, fit 20%, education 10%. Plain round() is half-even, so 98.5 and 97.5 both used to show 98.
+        Map<String, List<Integer>> parts = new Map<String, List<Integer>>{
+            'liam'   => new List<Integer>{ 100, 100, 100, 85 },       // 98.5
+            'elena'  => new List<Integer>{ 100, 96, 100, 85 },        // 97.5
+            'marc'   => new List<Integer>{ 100, 94, 100, 90 },        // 97.5
+            'jin'    => new List<Integer>{ 100, 94, 100, 80 },        // 96.5
+            'carlos' => new List<Integer>{ 100, 94, 100, 70 } };      // 95.5
+        Map<String, Decimal> shown = new Map<String, Decimal>();
+        Id j = jobId(); Id c = contactId();
+        for (String name : parts.keySet()) {
+            List<Integer> p = parts.get(name);
+            Candidate_Match__c m = CandidateMatchService.buildMatch(j, c,
+                result(p[0], p[1], p[2], p[3], new List<String>{ 'Java' }, 'ok'), 'Skills: Java', null, true);
+            shown.put(name, m.Score__c);
+        }
+        System.assertEquals(99, shown.get('liam'), '98.5 rounds up, not to the even 98');
+        System.assertEquals(98, shown.get('elena'));
+        System.assertEquals(98, shown.get('marc'));
+        System.assertEquals(97, shown.get('jin'), '96.5 rounds up, not to the even 96');
+        System.assertEquals(96, shown.get('carlos'));
+        System.assert(shown.get('liam') > shown.get('elena'), 'a candidate who really scored higher shows a higher score');
+    }
+
+    @IsTest static void componentScoresAreRoundedHalfUpToo() {
+        CandidateMatchService.ScoreResult r = new CandidateMatchService.ScoreResult();
+        r.skillsScore = 72.5; r.experienceScore = 64.5; r.fitScore = 80.5; r.educationScore = 70.5;
+        r.matchedSkills = new List<String>{ 'Java' }; r.reasoning = 'ok';
+        Candidate_Match__c m = CandidateMatchService.buildMatch(jobId(), contactId(), r, 'Skills: Java', null, true);
+        System.assertEquals(73, m.Skills_Score__c);
+        System.assertEquals(65, m.Experience_Score__c);
+        System.assertEquals(81, m.Fit_Score__c);
+        System.assertEquals(71, m.Education_Score__c);
+    }
+
     @IsTest static void unverifiedHighScoreIsCapped() {
         CandidateMatchService.ScoreResult r = result(95, 95, 95, 95, new List<String>{ 'Kubernetes' }, 'Great');
         Candidate_Match__c m = CandidateMatchService.buildMatch(jobId(), contactId(), r, 'Skills: Java', null, true);

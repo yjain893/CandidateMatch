@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Canonical_Key__c</fullName>
+    <label>Canonical Key</label><type>Text</type><length>80</length>
+    <description>The standard name of the skill (normalized like Name Key), as the resume parser's AI wrote it, e.g. "lightning web components" for LWC. It is the same as Name Key when the name already is the standard one. Empty only on rows saved before this field existed (parse the resume again to fill it). The Candidate Matcher V2 skill filter matches on it as well as on Name Key.</description>
+    <required>false</required>
+</CustomField>

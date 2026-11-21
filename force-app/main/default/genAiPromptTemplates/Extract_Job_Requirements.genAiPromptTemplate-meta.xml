@@ -12,6 +12,7 @@ Return ONLY one valid JSON object, no markdown:
 {
   "requiredSkills": ["must-have skills, tools, certifications"],
   "niceToHaveSkills": ["optional / preferred skills"],
+  "skillAliases": {"a skill exactly as written in requiredSkills or niceToHaveSkills": ["another name for the same skill"]},
   "synonyms": ["alternative names and closely related terms recruiters would accept, e.g. 'J2EE' for Java"],
   "location": "city (and state/country) of the job, or empty if not stated",
   "workMode": "On-site | Hybrid | Remote, or empty if not stated",
@@ -20,7 +21,13 @@ Return ONLY one valid JSON object, no markdown:
 
 Rules:
 - Use only what the description says or a direct, well-known synonym. Do not invent requirements.
-- Short canonical names, maximum 25 skills per list.</content>
+- Short canonical names, maximum 25 skills per list.
+- Never list a bare vendor, company or platform name as a skill on its own (not "Salesforce", "AWS", "Microsoft", "Google", "Oracle" or "SAP"). It says nothing about what the person can do. List the specific product, feature, language or certification instead (Apex, Sales Cloud, AWS Lambda, Azure DevOps). A vendor name is only kept as part of a longer skill name, such as "Salesforce Platform Developer I".
+- skillAliases has one entry for EVERY skill in requiredSkills and niceToHaveSkills. The key is the skill exactly as you wrote it in those lists. The value lists the other names a resume could use for that SAME skill: abbreviations and acronyms (LWC for Lightning Web Components), the short and the long form (REST API and REST API Integration), singular and plural, spelling and punctuation variants (Node.js and NodeJS), product renames, and each specific version or level (Platform Developer I and Platform Developer II for a Platform Developer certification).
+- Always include the shorter form of a skill name when people also write the skill that way on a resume (REST API Integration -> REST API).
+- A sentence that only says how many years or at what level someone has worked ("at least 15 years of experience, including 5 as a director", "Director-level experience") is not a skill: list nothing for it and put the minimum number of years in minExperienceYears. Never list years, seniority levels, or team or budget sizes as skills.
+- A spoken language is listed by the language alone ("English", "French"), never with a level or the word fluency ("English fluency", "English (fluent)"): a resume lists the language, not the level.
+- Aliases must be names of that same skill only. Never a broader category (not "API" for "REST API"), never a related but different skill (not JavaScript for Java, not NoSQL for SQL), never a job title. At most 10 aliases per skill, each under 60 characters. Use an empty list when there is none.</content>
         <inputs>
             <apiName>Job_Description</apiName>
             <definition>primitive://String</definition>

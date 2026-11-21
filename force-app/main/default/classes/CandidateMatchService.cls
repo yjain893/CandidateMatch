@@ -131,11 +131,13 @@ public with sharing class CandidateMatchService {
             total = 50;
             reasoning += ' [Score capped: no matched skill could be verified]';
         }
-        m.Score__c = total.round();
-        m.Skills_Score__c = sk.round();
-        m.Experience_Score__c = ex.round();
-        m.Fit_Score__c = useFit == true ? fi.round() : null;
-        m.Education_Score__c = ed.round();
+        // Half UP on purpose. Apex's plain round() is half-even (banker's rounding): 98.5 became 98 and 97.5 became 98, so a candidate
+        // who really scored a point higher showed the same score as one below. Half up keeps 98.5 -> 99 and 97.5 -> 98.
+        m.Score__c = total.round(System.RoundingMode.HALF_UP);
+        m.Skills_Score__c = sk.round(System.RoundingMode.HALF_UP);
+        m.Experience_Score__c = ex.round(System.RoundingMode.HALF_UP);
+        m.Fit_Score__c = useFit == true ? fi.round(System.RoundingMode.HALF_UP) : null;
+        m.Education_Score__c = ed.round(System.RoundingMode.HALF_UP);
         m.Reasoning__c = reasoning.left(5000);
         m.Matched_Skills__c = String.join(verified, ', ').left(2000);
         m.Missing_Skills__c = r.missingSkills == null ? null : String.join(r.missingSkills, ', ').left(2000);

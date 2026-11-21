@@ -2,6 +2,23 @@
 @IsTest
 private class CandidateMatcherTest {
     static final String EXTRACT_JSON = '{"requiredSkills":["Java"],"niceToHaveSkills":[],"synonyms":[],"location":"","workMode":"","minExperienceYears":null}';
+    /**
+     * Role Types values that exist on BOTH Contact and Job in the org the test runs in. The picklist is restricted and an org can hold other
+     * values than the ones this test was first written with (this one now holds executive roles), so the test never hardcodes them.
+     */
+    static List<String> sharedRoles() {
+        Set<String> onJob = new Set<String>();
+        for (Schema.PicklistEntry e : Job__c.Role_Types__c.getDescribe().getPicklistValues()) { if (e.isActive()) { onJob.add(e.getValue()); } }
+        List<String> out = new List<String>();
+        for (Schema.PicklistEntry e : Contact.Role_Types__c.getDescribe().getPicklistValues()) {
+            if (e.isActive() && onJob.contains(e.getValue())) { out.add(e.getValue()); }
+        }
+        return out;
+    }
+    static final List<String> ROLES = sharedRoles();
+    static final String ROLE_A = ROLES[0];      // the role of every candidate and of the job below
+    static final String ROLE_B = ROLES[1];      // only Ben has it besides ROLE_A
+
     static String scoreJson(Integer s) {
         return '{"skillsScore":' + s + ',"experienceScore":' + s + ',"fitScore":' + s + ',"educationScore":' + s
             + ',"matchedSkills":["Java"],"missingSkills":[],"fitNote":"","reasoning":"ok"}';
@@ -10,18 +27,18 @@ private class CandidateMatcherTest {
     @TestSetup static void setup() {
         insert new List<Contact>{
             new Contact(LastName = 'Anna', Has_Resume__c = true, Work_Modes__c = 'Remote', City__c = 'Austin', Expected_Salary__c = 90000,
-                        Role_Types__c = 'Developer', Resume_Parse_Status__c = 'Parsed', Candidate_Profile__c = 'Skills: Java'),
+                        Role_Types__c = ROLE_A, Resume_Parse_Status__c = 'Parsed', Candidate_Profile__c = 'Skills: Java'),
             new Contact(LastName = 'Ben', Has_Resume__c = true, Work_Modes__c = 'Hybrid;Remote', City__c = 'London', Expected_Salary__c = 150000,
-                        Role_Types__c = 'Developer;Architect', Resume_Parse_Status__c = 'Parsed', Candidate_Profile__c = 'Skills: Java, Apex'),
+                        Role_Types__c = ROLE_A + ';' + ROLE_B, Resume_Parse_Status__c = 'Parsed', Candidate_Profile__c = 'Skills: Java, Apex'),
             new Contact(LastName = 'Cara', Has_Resume__c = false, Work_Modes__c = 'Remote', City__c = 'Austin', Expected_Salary__c = 50000,
-                        Role_Types__c = 'Developer'),
+                        Role_Types__c = ROLE_A),
             new Contact(LastName = 'Dan', Has_Resume__c = true, Work_Modes__c = 'Remote', City__c = 'Austin', Expected_Salary__c = 70000,
-                        Role_Types__c = 'Developer'),                                   // resume not parsed yet
+                        Role_Types__c = ROLE_A),                                        // resume not parsed yet
             new Contact(LastName = 'Eve', Has_Resume__c = true, Work_Modes__c = 'Remote', City__c = 'Austin', Expected_Salary__c = 70000,
-                        Role_Types__c = 'Developer', Resume_Parse_Status__c = 'Review') // parse needs a human check
+                        Role_Types__c = ROLE_A, Resume_Parse_Status__c = 'Review') // parse needs a human check
         };
         insert new Job__c(Name = 'Dev', Job_Description__c = '<p>Java developer</p>', City__c = 'Austin',
-                          Work_Modes__c = 'Remote', Expected_Salary__c = 100000, Role_Types__c = 'Developer');
+                          Work_Modes__c = 'Remote', Expected_Salary__c = 100000, Role_Types__c = ROLE_A);
     }
 
     static Set<String> names(CandidateMatchOrchestrator.Filters f) {
@@ -47,7 +64,7 @@ private class CandidateMatcherTest {
         System.assertEquals(2, CandidateMatchOrchestrator.countNotParsed(f));   // Dan and Eve also live in Austin
         f = new CandidateMatchOrchestrator.Filters(); f.maxSalary = 100000;
         System.assertEquals(new Set<String>{ 'Anna' }, names(f));
-        f = new CandidateMatchOrchestrator.Filters(); f.roleTypes = new List<String>{ 'Architect' };
+        f = new CandidateMatchOrchestrator.Filters(); f.roleTypes = new List<String>{ ROLE_B };
         System.assertEquals(new Set<String>{ 'Ben' }, names(f));
 
         f = new CandidateMatchOrchestrator.Filters();

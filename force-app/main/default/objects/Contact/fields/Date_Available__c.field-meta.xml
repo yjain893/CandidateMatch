@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Date_Available__c</fullName>
+    <label>Date Available</label><type>Date</type>
+    <description>The first day the candidate can start a new job. The Candidate Matcher V2 "Date available" filter reads it.</description>
+    <inlineHelpText>First day the candidate can start. A date in the past or today means available now.</inlineHelpText>
+    <required>false</required>
+</CustomField>

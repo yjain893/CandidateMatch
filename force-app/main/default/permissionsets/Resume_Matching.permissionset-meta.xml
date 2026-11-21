@@ -27,6 +27,7 @@
     <fieldPermissions><editable>true</editable><field>Candidate_Match__c.Status__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Contact.Candidate_Profile__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Contact.City__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Contact.Date_Available__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Contact.Expected_Salary__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Contact.Has_Resume__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Contact.Resume_Parse_Error__c</field><readable>true</readable></fieldPermissions>
@@ -54,8 +55,10 @@
     <fieldPermissions><editable>true</editable><field>Job__c.Requirements_Extracted_On__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Job__c.Requirements_Hash__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Job__c.Role_Types__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Job__c.Skill_Map__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Job__c.Skill_Synonyms__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Job__c.Work_Modes__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Skill__c.Canonical_Key__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Skill__c.Contact__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Skill__c.Name_Key__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Skill__c.Years_Experience__c</field><readable>true</readable></fieldPermissions>

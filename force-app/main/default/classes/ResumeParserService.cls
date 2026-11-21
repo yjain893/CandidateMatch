@@ -6,7 +6,7 @@
 public with sharing class ResumeParserService {
     public static final String TEMPLATE = 'Parse_Resume';
 
-    public class SkillRow { public String name; public Decimal years; }
+    public class SkillRow { public String name; public String canonical; public Decimal years; }   // canonical: the standard name of the skill
     public class EducationRow {
         public String institution; public String degree; public String fieldOfStudy;
         public String startDate; public String endDate;
@@ -75,7 +75,7 @@ public with sharing class ResumeParserService {
                     if (s == null || String.isBlank(s.name)) { continue; }
                     String key = normalizeKey(s.name);
                     if (String.isBlank(key) || !seen.add(key)) { continue; }
-                    skillRows.add(new Skill__c(Name = s.name.left(80), Name_Key__c = key.left(80),
+                    skillRows.add(new Skill__c(Name = s.name.left(80), Name_Key__c = key.left(80), Canonical_Key__c = canonicalKeyOf(s),
                         Years_Experience__c = s.years, Contact__c = cid));
                     skillText.add(s.name + (s.years != null ? ' (' + s.years + 'y)' : ''));
                 }
@@ -171,6 +171,18 @@ public with sharing class ResumeParserService {
                 errors.put((Id) rows[i].get('Contact__c'), res[i].getErrors()[0].getMessage());
             }
         }
+    }
+
+    /**
+     * The standard name the AI gave for a skill, as a key like Name_Key__c ("LWC" -> "lightning web components"). Every parsed skill gets
+     * one: when the AI gave none, or the same name, it is the skill's own key. So an empty Canonical_Key__c always means "this row was saved
+     * before the field existed (parse the resume again)". The skill filter matches on both keys.
+     */
+    @TestVisible
+    private static String canonicalKeyOf(SkillRow s) {
+        String own = normalizeKey(s.name).left(80);
+        String standard = normalizeKey(s.canonical).left(80);
+        return String.isBlank(standard) ? own : standard;
     }
 
     public static String normalizeKey(String s) {
