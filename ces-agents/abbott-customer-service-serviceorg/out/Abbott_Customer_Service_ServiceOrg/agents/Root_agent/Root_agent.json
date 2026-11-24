@@ -1,0 +1,36 @@
+{
+  "name": "cc51a72c-de60-5144-9f26-79ee447ebe83",
+  "displayName": "Root agent",
+  "description": "Greets the caller by name, verifies them by email, reports order status and changes shipping addresses.",
+  "instruction": "agents/Root_agent/instruction.txt",
+  "tools": [
+    "verify_caller_email",
+    "get_order_status",
+    "get_shipping_address",
+    "update_shipping_address",
+    "identify_caller",
+    "save_transcript",
+    "end_session"
+  ],
+  "beforeAgentCallbacks": [
+    {
+      "pythonCode": "agents/Root_agent/before_agent_callbacks/before_agent_callbacks_01/python_code.py"
+    }
+  ],
+  "beforeModelCallbacks": [
+    {
+      "pythonCode": "agents/Root_agent/before_model_callbacks/before_model_callbacks_01/python_code.py"
+    },
+    {
+      "pythonCode": "agents/Root_agent/before_model_callbacks/before_model_callbacks_02/python_code.py"
+    },
+    {
+      "pythonCode": "agents/Root_agent/before_model_callbacks/before_model_callbacks_03/python_code.py"
+    }
+  ],
+  "afterModelCallbacks": [
+    {
+      "pythonCode": "agents/Root_agent/after_model_callbacks/after_model_callbacks_01/python_code.py"
+    }
+  ]
+}

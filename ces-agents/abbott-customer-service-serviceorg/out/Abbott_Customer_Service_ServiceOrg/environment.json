@@ -1,0 +1,15 @@
+{
+  "toolsets": {
+    "query_salesforce": {
+      "openApiToolset": {
+        "url": "https://app-momentum-4398--dev.sandbox.my.salesforce.com",
+        "apiAuthentication": {
+          "oauthConfig": {
+            "clientSecretVersion": "projects/PROJECT_ID/secrets/salesforce-client-secret/versions/latest",
+            "tokenEndpoint": "https://app-momentum-4398--dev.sandbox.my.salesforce.com/services/oauth2/token"
+          }
+        }
+      }
+    }
+  }
+}

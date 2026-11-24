@@ -1,0 +1,391 @@
+{
+  "app": {
+    "displayName": "Abbott Customer Service ServiceOrg",
+    "description": "Same assistant as the demoOrg one, connected to the serviceOrg sandbox: Salesforce is reached through the VoiceAgentApi Apex endpoint, and calls are saved to Chat_Conversation__c.",
+    "channel": "voice",
+    "defaultLanguage": "en-US",
+    "timeZone": "America/Los_Angeles",
+    "model": "gemini-composite-v2",
+    "persona": "CHATTY",
+    "voice": {
+      "name": "en-US-Chirp3-HD-Rasalgethi",
+      "speakingRate": 1.0,
+      "ambientSound": "office_3"
+    },
+    "inactivityTimeout": "10s",
+    "rootAgent": "Root agent",
+    "logging": {
+      "retentionDays": 365,
+      "redaction": true
+    }
+  },
+  "salesforce": {
+    "orgAlias": "serviceOrg",
+    "instanceUrl": "https://app-momentum-4398--dev.sandbox.my.salesforce.com",
+    "apiVersion": "v68.0",
+    "transport": "connector",
+    "connectorTool": "query_salesforce_run_query",
+    "auth": {
+      "mode": "oauth_client_credentials",
+      "clientId": "REPLACE_WITH_CONSUMER_KEY",
+      "clientSecretVersion": "projects/PROJECT_ID/secrets/salesforce-client-secret/versions/latest"
+    }
+  },
+  "variables": [
+    {
+      "name": "company_name",
+      "type": "STRING",
+      "default": "Abbott",
+      "description": "Client name used in the greeting and instructions."
+    }
+  ],
+  "toolsets": [
+    {
+      "name": "query_salesforce",
+      "type": "salesforce_openapi",
+      "title": "Salesforce customer lookups (Apex)",
+      "server_includes_version": false,
+      "description": "Salesforce connector. Used only by the Python tools; the agent never calls it directly.",
+      "operations": [
+        {
+          "kind": "apex_rest",
+          "operationId": "run_query",
+          "method": "get",
+          "path": "/services/apexrest/voiceagent/query",
+          "description": "Runs one of two fixed lookups: an order by its number, or contacts by the last four digits of a phone. Not for direct use by the agent.",
+          "params": [
+            {
+              "name": "q",
+              "in": "query",
+              "required": true,
+              "pattern": "^(SELECT [A-Za-z0-9_., ]+ FROM Order WHERE OrderNumber = '[0-9]{1,8}' LIMIT 1|SELECT [A-Za-z0-9_., ]+ FROM Contact WHERE AccountId != null AND \\(Phone LIKE '%[0-9]{4}' OR MobilePhone LIKE '%[0-9]{4}'\\) LIMIT [0-9]{1,2})$",
+              "description": "One of the two fixed lookups, built by the Python tools."
+            }
+          ],
+          "response_fields": {
+            "records": [
+              "Id",
+              "OrderNumber",
+              "Status",
+              "EffectiveDate",
+              "EndDate",
+              {
+                "name": "TotalAmount",
+                "type": "number"
+              },
+              "ShippingStreet",
+              "ShippingCity",
+              "ShippingState",
+              "ShippingPostalCode",
+              "ShippingCountry",
+              "FirstName",
+              "Email",
+              "AccountId",
+              "Phone",
+              "MobilePhone"
+            ]
+          }
+        },
+        {
+          "kind": "apex_rest",
+          "operationId": "update_order_address",
+          "method": "patch",
+          "path": "/services/apexrest/voiceagent/order/{id}",
+          "description": "Changes the shipping address of one order. Used only by the update_shipping_address tool.",
+          "params": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "description": "Salesforce Id of the order"
+            }
+          ],
+          "body_fields": [
+            {
+              "name": "ShippingStreet",
+              "type": "string"
+            },
+            {
+              "name": "ShippingCity",
+              "type": "string"
+            },
+            {
+              "name": "ShippingState",
+              "type": "string"
+            },
+            {
+              "name": "ShippingPostalCode",
+              "type": "string"
+            },
+            {
+              "name": "ShippingCountry",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "kind": "upsert_record",
+          "operationId": "save_transcript",
+          "sobject": "Chat_Conversation__c",
+          "external_id_field": "Conversation_Identifier__c",
+          "path_param": "session_id",
+          "description": "Creates or updates the chat conversation record for one call. Used only by the save_transcript Python tool.",
+          "fields": [
+            {
+              "name": "Transcript__c",
+              "type": "string",
+              "description": "Caller and agent turns"
+            },
+            {
+              "name": "Start_Timestamp__c",
+              "type": "string",
+              "description": "ISO 8601 date time"
+            },
+            {
+              "name": "End_Timestamp__c",
+              "type": "string",
+              "description": "ISO 8601 date time"
+            },
+            {
+              "name": "Closed_At__c",
+              "type": "string",
+              "description": "ISO 8601 date time"
+            },
+            {
+              "name": "Last_Message_At__c",
+              "type": "string",
+              "description": "ISO 8601 date time"
+            },
+            {
+              "name": "Message_Count__c",
+              "type": "number"
+            },
+            {
+              "name": "Conversation_Status__c",
+              "type": "picklist",
+              "enum": [
+                "Open",
+                "Closed"
+              ]
+            },
+            {
+              "name": "Has_Human_Agent__c",
+              "type": "boolean"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "identify_caller",
+      "template": "identify_caller",
+      "params": {}
+    },
+    {
+      "name": "verify_caller_email",
+      "template": "verify_contact_email",
+      "params": {
+        "max_attempts": 3
+      }
+    },
+    {
+      "name": "get_order_status",
+      "template": "lookup_record",
+      "params": {
+        "sobject": "Order",
+        "lookup": {
+          "param": "order_number",
+          "field": "OrderNumber",
+          "normalize": "digits",
+          "pad": 8,
+          "doc": "The order number the caller gave, for example \"102\" or \"00000102\"."
+        },
+        "remember_id_as": "last_order_id",
+        "return_fields": {
+          "order_status": "Status",
+          "order_date": "EffectiveDate",
+          "end_date": "EndDate",
+          "total_amount": "TotalAmount"
+        },
+        "description": "Gets the status, order date, end date and total amount of one order. Call it after the caller is verified and has given the order number. If error is not_found, ask the caller to check the order number."
+      }
+    },
+    {
+      "name": "get_shipping_address",
+      "template": "lookup_record",
+      "params": {
+        "sobject": "Order",
+        "lookup": {
+          "param": "order_number",
+          "field": "OrderNumber",
+          "normalize": "digits",
+          "pad": 8,
+          "doc": "The order number the caller gave, for example \"102\" or \"00000102\"."
+        },
+        "remember_id_as": "last_order_id",
+        "return_fields": {
+          "street": "ShippingStreet",
+          "city": "ShippingCity",
+          "state": "ShippingState",
+          "postal_code": "ShippingPostalCode",
+          "country": "ShippingCountry"
+        },
+        "description": "Gets the current shipping address of one order, to read out to the caller before a change. Call it after the caller is verified and has given the order number."
+      }
+    },
+    {
+      "name": "update_shipping_address",
+      "template": "update_record",
+      "params": {
+        "sobject": "Order",
+        "lookup": {
+          "param": "order_number",
+          "field": "OrderNumber",
+          "normalize": "digits",
+          "pad": 8,
+          "doc": "The order number the caller gave, for example \"102\" or \"00000102\"."
+        },
+        "remember_id_as": "last_order_id",
+        "require_confirmation": false,
+        "write_connector_tool": "query_salesforce_update_order_address",
+        "fields": [
+          {
+            "param": "street",
+            "field": "ShippingStreet",
+            "type": "string",
+            "max_length": 255,
+            "doc": "New street and number, exactly as the caller said it."
+          },
+          {
+            "param": "city",
+            "field": "ShippingCity",
+            "type": "string",
+            "max_length": 40,
+            "doc": "New city, only if the caller gave one."
+          },
+          {
+            "param": "state",
+            "field": "ShippingState",
+            "type": "string",
+            "max_length": 80,
+            "doc": "New state or province, only if the caller gave one."
+          },
+          {
+            "param": "postal_code",
+            "field": "ShippingPostalCode",
+            "type": "string",
+            "max_length": 20,
+            "doc": "New postal code, only if the caller gave one."
+          },
+          {
+            "param": "country",
+            "field": "ShippingCountry",
+            "type": "string",
+            "max_length": 80,
+            "doc": "New country, only if the caller gave one."
+          }
+        ],
+        "description": "Changes the shipping address of one order to what the caller said. Send only the parts the caller gave. Call it after the caller is verified and has given the order number and the new address."
+      }
+    },
+    {
+      "name": "save_transcript",
+      "template": "save_transcript",
+      "params": {
+        "connector_tool": "query_salesforce_save_transcript",
+        "sobject": "Chat_Conversation__c",
+        "external_id_field": "Conversation_Identifier__c",
+        "fields": {
+          "transcript": "Transcript__c",
+          "started_at": "Start_Timestamp__c",
+          "ended_at": "End_Timestamp__c",
+          "closed_at": "Closed_At__c",
+          "last_message_at": "Last_Message_At__c",
+          "turn_count": "Message_Count__c",
+          "has_human_agent": "Has_Human_Agent__c"
+        },
+        "links": {},
+        "fixed_values": {
+          "Conversation_Status__c": "Closed"
+        }
+      }
+    }
+  ],
+  "guardrails": [
+    {
+      "type": "default_safety",
+      "level": "strict"
+    },
+    {
+      "type": "default_prompt_security"
+    }
+  ],
+  "agents": [
+    {
+      "displayName": "Root agent",
+      "description": "Greets the caller by name, verifies them by email, reports order status and changes shipping addresses.",
+      "instructionFile": "instructions/root.txt",
+      "tools": [
+        "verify_caller_email",
+        "get_order_status",
+        "get_shipping_address",
+        "update_shipping_address",
+        "identify_caller",
+        "save_transcript",
+        "end_session"
+      ],
+      "callbacks": {
+        "beforeModel": [
+          {
+            "template": "greet_known_caller",
+            "params": {
+              "tool": "identify_caller",
+              "mode": "direct",
+              "speak": "model"
+            }
+          },
+          {
+            "template": "escalate_on_system_error",
+            "params": {
+              "tools": [
+                "get_order_status",
+                "get_shipping_address",
+                "update_shipping_address"
+              ],
+              "message": "I'm sorry, I can't reach our order system right now. Let me connect you with a team member."
+            }
+          },
+          {
+            "template": "inactivity_prompt",
+            "params": {
+              "text": "Are you still there?"
+            }
+          }
+        ],
+        "afterModel": [
+          {
+            "template": "save_transcript_on_end",
+            "params": {
+              "tool": "save_transcript",
+              "closing_texts": {
+                "completed": "Thanks for reaching out to us. Have a good day.",
+                "verification failed": "I'm sorry, I'm not able to verify you today. Thank you for calling. Goodbye.",
+                "escalated": "I'm connecting you with a team member now."
+              }
+            }
+          }
+        ],
+        "beforeAgent": [
+          {
+            "template": "lookup_caller_on_start",
+            "params": {
+              "tool": "identify_caller"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
