@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Category__c</fullName>
+    <label>Category</label>
+    <description>What the case is about. Set from the call transcript. Values can be edited later.</description>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>false</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>Order Status</fullName><default>false</default><label>Order Status</label></value>
+            <value><fullName>Shipping Address Change</fullName><default>false</default><label>Shipping Address Change</label></value>
+            <value><fullName>Billing or Invoice</fullName><default>false</default><label>Billing or Invoice</label></value>
+            <value><fullName>Product Question</fullName><default>false</default><label>Product Question</label></value>
+            <value><fullName>Complaint</fullName><default>false</default><label>Complaint</label></value>
+            <value><fullName>Technical Issue</fullName><default>false</default><label>Technical Issue</label></value>
+            <value><fullName>Verification Failed</fullName><default>false</default><label>Verification Failed</label></value>
+            <value><fullName>Other</fullName><default>true</default><label>Other</label></value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

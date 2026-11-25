@@ -1,0 +1,530 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier>mySH/3tMTUjCqH9TrI39O6x9phOeWrHOJiZWSg8N+fM=_6</activeVersionIdentifier>
+    <developerName>Summarise_Case_All_Components</developerName>
+    <masterLabel>Summarise Case All Components</masterLabel>
+    <overridable>false</overridable>
+    <templateVersions>
+        <content>Act as an **Automated Data Reporter**.
+
+Use the provided case data to generate a structured response:
+{!$RecordSnapshot:Case.snapshot}
+
+**Rules:**
+- Always structure your response into the four mandatory sections below
+- Focus on extracting insights from available data, especially messaging conversations
+- If any section does not have sufficient data, return **&quot;NO DATA AVAILABLE&quot;**
+- DO NOT MENTION system terms like JSON, snapshot, keys, or placeholders
+- DO NOT MENTION ANY RECORD IDs, and other confidential, inner details
+
+---
+
+**SUMMARY SECTIONS**
+
+**Case Description**
+Summarize the case description and overall issue.
+
+**Case Comments**
+Summarize customer comments or primary issue from case-related interactions.
+
+**Messaging Session**
+Summarize the messaging/chat conversation between customer and agent.
+Highlight:
+- Customer problem
+- Agent responses
+- Actions taken
+- Outcome
+
+**Feeds**
+Summarize chatter activity if present, otherwise return NO DATA AVAILABLE.
+</content>
+        <fileDroppingStrategy>{&quot;dropFilesBy&quot;:&quot;LAST_MODIFIED_DATE&quot;,&quot;dropFileStartingWith&quot;:&quot;OLDEST&quot;}</fileDroppingStrategy>
+        <inputs>
+            <apiName>Case</apiName>
+            <definition>SOBJECT://Case</definition>
+            <masterLabel>Case</masterLabel>
+            <referenceName>Input:Case</referenceName>
+            <required>true</required>
+        </inputs>
+        <isCitationEnabled>false</isCitationEnabled>
+        <primaryModel>sfdc_ai__DefaultOpenAIGPT4OmniMini</primaryModel>
+        <status>Published</status>
+        <templateDataProviders>
+            <definition>invocable://getDataForGrounding</definition>
+            <description>Retrieves record data for grounding a prompt template.</description>
+            <label>Record Snapshot</label>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>true</isRequired>
+                <parameterName>recordId</parameterName>
+                <valueExpression>{!$Input:Case.Id}</valueExpression>
+            </parameters>
+            <referenceName>RecordSnapshot:Case</referenceName>
+        </templateDataProviders>
+        <versionIdentifier>mySH/3tMTUjCqH9TrI39O6x9phOeWrHOJiZWSg8N+fM=_1</versionIdentifier>
+    </templateVersions>
+    <templateVersions>
+        <content>Act as an **Automated Data Reporter**.
+
+Use the provided case data to generate a structured response:
+{!$RecordSnapshot:Case.snapshot}
+
+**Rules:**
+- Always structure your response into the five mandatory sections below
+- Focus on extracting insights from available data, especially messaging conversations
+- If any section does not have sufficient data, return **&quot;NO DATA AVAILABLE&quot;**
+- DO NOT MENTION system terms like JSON, snapshot, keys, or placeholders
+- DO NOT MENTION ANY RECORD IDs, and other confidential, inner details
+
+---
+
+**SUMMARY SECTIONS**
+
+**Case Description**
+Summarize the case description and overall issue.
+
+**Case Comments**
+Summarize customer comments or primary issue from case-related interactions.
+
+**Messaging Session**
+Summarize the messaging/chat conversation between customer and agent.
+Highlight:
+- Customer problem
+- Agent responses
+- Actions taken
+- Outcome
+
+**Activities**
+Summarize the case&apos;s activity records: tasks, logged calls, events and emails.
+For each, note what was done or requested, who was involved, the date, and its status or outcome.
+List the most recent activities first. If there are open tasks or upcoming events, call them out as next steps.
+
+**Feeds**
+Summarize chatter activity if present, otherwise return NO DATA AVAILABLE.
+</content>
+        <fileDroppingStrategy>{&quot;dropFilesBy&quot;:&quot;LAST_MODIFIED_DATE&quot;,&quot;dropFileStartingWith&quot;:&quot;OLDEST&quot;}</fileDroppingStrategy>
+        <inputs>
+            <apiName>Case</apiName>
+            <definition>SOBJECT://Case</definition>
+            <masterLabel>Case</masterLabel>
+            <referenceName>Input:Case</referenceName>
+            <required>true</required>
+        </inputs>
+        <isCitationEnabled>false</isCitationEnabled>
+        <primaryModel>sfdc_ai__DefaultOpenAIGPT4OmniMini</primaryModel>
+        <status>Published</status>
+        <templateDataProviders>
+            <definition>invocable://getDataForGrounding</definition>
+            <description>Retrieves record data for grounding a prompt template.</description>
+            <label>Record Snapshot</label>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>true</isRequired>
+                <parameterName>recordId</parameterName>
+                <valueExpression>{!$Input:Case.Id}</valueExpression>
+            </parameters>
+            <referenceName>RecordSnapshot:Case</referenceName>
+        </templateDataProviders>
+        <versionIdentifier>mySH/3tMTUjCqH9TrI39O6x9phOeWrHOJiZWSg8N+fM=_2</versionIdentifier>
+    </templateVersions>
+    <templateVersions>
+        <content>Act as an **Automated Data Reporter**.
+
+Use the provided case data to generate a structured response:
+{!$RecordSnapshot:Case.snapshot}
+
+**Rules:**
+- Always structure your response into the five mandatory sections below
+- Focus on extracting insights from available data, especially messaging conversations
+- If any section does not have sufficient data, return **&quot;NO DATA AVAILABLE&quot;**
+- DO NOT MENTION system terms like JSON, snapshot, keys, or placeholders
+- DO NOT MENTION ANY RECORD IDs, and other confidential, inner details
+
+---
+
+**SUMMARY SECTIONS**
+
+**Case Description**
+Summarize the case description and overall issue.
+
+**Case Comments**
+Summarize customer comments or primary issue from case-related interactions.
+
+**Messaging Session**
+Summarize the messaging/chat conversation between customer and agent.
+Highlight:
+- Customer problem
+- Agent responses
+- Actions taken
+- Outcome
+
+**Activities**
+Summarize ONLY the case&apos;s Activity records: tasks, logged calls, events and emails.
+For each, note what was done or requested, who was involved, the date, and its status or outcome.
+List the most recent activities first. If there are open tasks or upcoming events, call them out as next steps.
+Do NOT include case comments in this section, since they are already covered under Case Comments. Do not repeat or restate any comment text here.
+If there are no tasks, calls, events or emails, return **&quot;NO DATA AVAILABLE&quot;**.
+
+**Feeds**
+Summarize chatter activity if present, otherwise return NO DATA AVAILABLE.
+</content>
+        <fileDroppingStrategy>{&quot;dropFilesBy&quot;:&quot;LAST_MODIFIED_DATE&quot;,&quot;dropFileStartingWith&quot;:&quot;OLDEST&quot;}</fileDroppingStrategy>
+        <inputs>
+            <apiName>Case</apiName>
+            <definition>SOBJECT://Case</definition>
+            <masterLabel>Case</masterLabel>
+            <referenceName>Input:Case</referenceName>
+            <required>true</required>
+        </inputs>
+        <isCitationEnabled>false</isCitationEnabled>
+        <primaryModel>sfdc_ai__DefaultOpenAIGPT4OmniMini</primaryModel>
+        <status>Published</status>
+        <templateDataProviders>
+            <definition>invocable://getDataForGrounding</definition>
+            <description>Retrieves record data for grounding a prompt template.</description>
+            <label>Record Snapshot</label>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>true</isRequired>
+                <parameterName>recordId</parameterName>
+                <valueExpression>{!$Input:Case.Id}</valueExpression>
+            </parameters>
+            <referenceName>RecordSnapshot:Case</referenceName>
+        </templateDataProviders>
+        <versionIdentifier>mySH/3tMTUjCqH9TrI39O6x9phOeWrHOJiZWSg8N+fM=_3</versionIdentifier>
+    </templateVersions>
+    <templateVersions>
+        <content>Act as an **Automated Data Reporter**.
+
+Use the provided case data to generate a structured response:
+{!$RecordSnapshot:Case.snapshot}
+
+**Rules:**
+- Always structure your response into the five mandatory sections below
+- Focus on extracting insights from available data, especially messaging conversations
+- If any section does not have sufficient data, return **&quot;NO DATA AVAILABLE&quot;**
+- DO NOT MENTION system terms like JSON, snapshot, keys, or placeholders
+- DO NOT MENTION ANY RECORD IDs, and other confidential, inner details
+
+---
+
+**SUMMARY SECTIONS**
+
+**Case Description**
+Summarize the case description and overall issue.
+
+**Case Comments**
+Summarize customer comments or primary issue from case-related interactions.
+
+**Messaging Session**
+Summarize the messaging/chat conversation between customer and agent.
+Highlight:
+- Customer problem
+- Agent responses
+- Actions taken
+- Outcome
+
+**Activities**
+Summarize ONLY the case&apos;s Activity records: tasks, logged calls, events and emails.
+For each, note what was done or requested, who was involved, the date, and its status or outcome.
+List the most recent activities first. If there are open tasks or upcoming events, call them out as next steps.
+Do NOT include case comments in this section, since they are already covered under Case Comments. Do not repeat or restate any comment text here.
+If there are no tasks, calls, events or emails, return **&quot;NO DATA AVAILABLE&quot;**.
+
+
+
+**Feeds**
+Summarize chatter activity if present, otherwise return NO DATA AVAILABLE.
+</content>
+        <fileDroppingStrategy>{&quot;dropFilesBy&quot;:&quot;LAST_MODIFIED_DATE&quot;,&quot;dropFileStartingWith&quot;:&quot;OLDEST&quot;}</fileDroppingStrategy>
+        <inputs>
+            <apiName>Case</apiName>
+            <definition>SOBJECT://Case</definition>
+            <masterLabel>Case</masterLabel>
+            <referenceName>Input:Case</referenceName>
+            <required>true</required>
+        </inputs>
+        <isCitationEnabled>false</isCitationEnabled>
+        <primaryModel>sfdc_ai__DefaultOpenAIGPT4OmniMini</primaryModel>
+        <status>Draft</status>
+        <templateDataProviders>
+            <definition>invocable://getDataForGrounding</definition>
+            <description>Retrieves record data for grounding a prompt template.</description>
+            <label>Record Snapshot</label>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>true</isRequired>
+                <parameterName>recordId</parameterName>
+                <valueExpression>{!$Input:Case.Id}</valueExpression>
+            </parameters>
+            <referenceName>RecordSnapshot:Case</referenceName>
+        </templateDataProviders>
+        <templateFormat>FormulaExpression</templateFormat>
+        <versionIdentifier>mySH/3tMTUjCqH9TrI39O6x9phOeWrHOJiZWSg8N+fM=_4</versionIdentifier>
+    </templateVersions>
+    <templateVersions>
+        <content>Act as an **Automated Data Reporter**.
+
+Use the provided case data to generate a structured response:
+{!$RecordSnapshot:Case.snapshot}
+
+**Rules:**
+- Always structure your response into the five mandatory sections below
+- Focus on extracting insights from available data, especially messaging conversations
+- If any section does not have sufficient data, return **&quot;NO DATA AVAILABLE&quot;**
+- DO NOT MENTION system terms like JSON, snapshot, keys, or placeholders
+- DO NOT MENTION ANY RECORD IDs, and other confidential, inner details
+
+---
+
+**SUMMARY SECTIONS**
+
+**Case Description**
+Summarize the case description and overall issue.
+
+**Case Comments**
+Summarize customer comments or primary issue from case-related interactions.
+
+**Messaging Session**
+Summarize the messaging/chat conversation between customer and agent.
+Highlight:
+- Customer problem
+- Agent responses
+- Actions taken
+- Outcome
+
+**Activities**
+Summarize ONLY the case&apos;s Activity records listed below. They include every open and closed activity: tasks, logged calls, events and emails.
+For each, note what was done or requested, who was involved, the date, and its status or outcome.
+List the most recent activities first. If there are open tasks or upcoming events, call them out as next steps.
+Do NOT include case comments in this section, since they are already covered under Case Comments. Do not repeat or restate any comment text here.
+If the activity records below say NO ACTIVITY RECORDS, return **&quot;NO DATA AVAILABLE&quot;**.
+
+Activity records:
+{!$Apex:CaseActivitiesForPrompt.Prompt}
+
+**Feeds**
+Summarize chatter activity if present, otherwise return NO DATA AVAILABLE.
+</content>
+        <fileDroppingStrategy>{&quot;dropFilesBy&quot;:&quot;LAST_MODIFIED_DATE&quot;,&quot;dropFileStartingWith&quot;:&quot;OLDEST&quot;}</fileDroppingStrategy>
+        <inputs>
+            <apiName>Case</apiName>
+            <definition>SOBJECT://Case</definition>
+            <masterLabel>Case</masterLabel>
+            <referenceName>Input:Case</referenceName>
+            <required>true</required>
+        </inputs>
+        <isCitationEnabled>false</isCitationEnabled>
+        <primaryModel>sfdc_ai__DefaultOpenAIGPT4OmniMini</primaryModel>
+        <status>Published</status>
+        <templateDataProviders>
+            <definition>invocable://getDataForGrounding</definition>
+            <description>Retrieves record data for grounding a prompt template.</description>
+            <label>Record Snapshot</label>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>true</isRequired>
+                <parameterName>recordId</parameterName>
+                <valueExpression>{!$Input:Case.Id}</valueExpression>
+            </parameters>
+            <referenceName>RecordSnapshot:Case</referenceName>
+        </templateDataProviders>
+        <templateDataProviders>
+            <definition>apex://CaseActivitiesForPrompt</definition>
+            <label>Case Activities</label>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>true</isRequired>
+                <parameterName>caseId</parameterName>
+                <valueExpression>{!$Input:Case.Id}</valueExpression>
+            </parameters>
+            <referenceName>Apex:CaseActivitiesForPrompt</referenceName>
+        </templateDataProviders>
+        <versionIdentifier>mySH/3tMTUjCqH9TrI39O6x9phOeWrHOJiZWSg8N+fM=_5</versionIdentifier>
+    </templateVersions>
+    <templateVersions>
+        <content>Act as an **Automated Data Reporter**.
+
+Use the provided case data to generate a structured response:
+{!$RecordSnapshot:Case.snapshot}
+
+**Rules:**
+- Always structure your response into the five mandatory sections below
+- Be concise. Keep the whole summary short and scannable
+- Use bullet points in every section. One short bullet per item, a single line each where possible
+- No introductions, no closing remarks, no repeated information across sections
+- Focus on extracting insights from available data, especially messaging conversations
+- If any section does not have sufficient data, return **&quot;NO DATA AVAILABLE&quot;**
+- DO NOT MENTION system terms like JSON, snapshot, keys, or placeholders
+- DO NOT MENTION ANY RECORD IDs, and other confidential, inner details
+
+---
+
+**SUMMARY SECTIONS**
+
+**Case Description**
+Up to 3 bullets: the issue, key details (such as product, order or quantity) and what the customer wants.
+
+**Case Comments**
+Up to 3 bullets covering the key points of the customer comments. Skip anything already stated in Case Description.
+
+**Messaging Session**
+Up to 4 bullets, in order:
+- Customer problem
+- Agent response and actions taken
+- Outcome
+
+**Activities**
+Use ONLY the Activity records listed below. They include every open and closed activity: tasks, logged calls, events and emails.
+One bullet per activity, newest first, in this form: type, date, subject, then a few words on what was done, who was involved and its status.
+Maximum 6 bullets. If there are more, keep the most recent and any open or upcoming items, and mention that others exist.
+Mark open tasks and upcoming events as next steps.
+Do NOT include case comments in this section, since they are already covered under Case Comments.
+If the activity records below say NO ACTIVITY RECORDS, return **&quot;NO DATA AVAILABLE&quot;**.
+
+Activity records:
+{!$Apex:CaseActivitiesForPrompt.Prompt}
+
+**Feeds**
+Up to 3 bullets summarizing chatter activity if present, otherwise return **&quot;NO DATA AVAILABLE&quot;**.
+</content>
+        <fileDroppingStrategy>{&quot;dropFilesBy&quot;:&quot;LAST_MODIFIED_DATE&quot;,&quot;dropFileStartingWith&quot;:&quot;OLDEST&quot;}</fileDroppingStrategy>
+        <inputs>
+            <apiName>Case</apiName>
+            <definition>SOBJECT://Case</definition>
+            <masterLabel>Case</masterLabel>
+            <referenceName>Input:Case</referenceName>
+            <required>true</required>
+        </inputs>
+        <isCitationEnabled>false</isCitationEnabled>
+        <primaryModel>sfdc_ai__DefaultOpenAIGPT4OmniMini</primaryModel>
+        <status>Published</status>
+        <templateDataProviders>
+            <definition>invocable://getDataForGrounding</definition>
+            <description>Retrieves record data for grounding a prompt template.</description>
+            <label>Record Snapshot</label>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>true</isRequired>
+                <parameterName>recordId</parameterName>
+                <valueExpression>{!$Input:Case.Id}</valueExpression>
+            </parameters>
+            <referenceName>RecordSnapshot:Case</referenceName>
+        </templateDataProviders>
+        <templateDataProviders>
+            <definition>apex://CaseActivitiesForPrompt</definition>
+            <label>Case Activities</label>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>true</isRequired>
+                <parameterName>caseId</parameterName>
+                <valueExpression>{!$Input:Case.Id}</valueExpression>
+            </parameters>
+            <referenceName>Apex:CaseActivitiesForPrompt</referenceName>
+        </templateDataProviders>
+        <versionIdentifier>mySH/3tMTUjCqH9TrI39O6x9phOeWrHOJiZWSg8N+fM=_6</versionIdentifier>
+    </templateVersions>
+    <templateVersions>
+        <content>Act as an **Automated Data Reporter**.
+
+Use the provided case data to generate a structured response:
+{!$RecordSnapshot:Case.snapshot}
+
+**Rules:**
+- Always structure your response into the six mandatory sections below
+- Be concise. Keep the whole summary short and scannable
+- Use bullet points in every section. One short bullet per item, a single line each where possible
+- No introductions, no closing remarks, no repeated information across sections
+- Focus on extracting insights from available data, especially messaging conversations
+- If any section does not have sufficient data, return **&quot;NO DATA AVAILABLE&quot;**
+- DO NOT MENTION system terms like JSON, snapshot, keys, or placeholders
+- DO NOT MENTION ANY RECORD IDs, and other confidential, inner details
+
+---
+
+**SUMMARY SECTIONS**
+
+**Case Description**
+Up to 3 bullets: the issue, key details (such as product, order or quantity) and what the customer wants.
+
+**Case Comments**
+Up to 3 bullets covering the key points of the customer comments. Skip anything already stated in Case Description.
+
+**Messaging Session**
+Up to 4 bullets, in order:
+- Customer problem
+- Agent response and actions taken
+- Outcome
+
+**Activities**
+Use ONLY the Activity records listed below. They include every open and closed activity: tasks, logged calls, events and emails.
+One bullet per activity, newest first, in this form: type, date, subject, then a few words on what was done, who was involved and its status.
+Maximum 6 bullets. If there are more, keep the most recent and any open or upcoming items, and mention that others exist.
+Mark open tasks and upcoming events as next steps.
+Do NOT include case comments in this section, since they are already covered under Case Comments.
+If the activity records below say NO ACTIVITY RECORDS, return **&quot;NO DATA AVAILABLE&quot;**.
+
+Activity records:
+{!$Apex:CaseActivitiesForPrompt.Prompt}
+
+**Call Transcript**
+Use ONLY the call transcript records listed below. They are the saved voice agent calls linked to this case.
+Up to 3 bullets: what the caller asked, what the agent did, and the outcome of the call.
+Do NOT repeat details already stated under Case Description or Messaging Session.
+If the records below say NO TRANSCRIPT RECORDS, return **&quot;NO DATA AVAILABLE&quot;**.
+
+Call transcript records:
+{!$Apex:CaseTranscriptsForPrompt.Prompt}
+
+**Feeds**
+Up to 3 bullets summarizing chatter activity if present, otherwise return **&quot;NO DATA AVAILABLE&quot;**.
+</content>
+        <fileDroppingStrategy>{&quot;dropFilesBy&quot;:&quot;LAST_MODIFIED_DATE&quot;,&quot;dropFileStartingWith&quot;:&quot;OLDEST&quot;}</fileDroppingStrategy>
+        <inputs>
+            <apiName>Case</apiName>
+            <definition>SOBJECT://Case</definition>
+            <masterLabel>Case</masterLabel>
+            <referenceName>Input:Case</referenceName>
+            <required>true</required>
+        </inputs>
+        <isCitationEnabled>false</isCitationEnabled>
+        <primaryModel>sfdc_ai__DefaultOpenAIGPT4OmniMini</primaryModel>
+        <status>Draft</status>
+        <templateDataProviders>
+            <definition>invocable://getDataForGrounding</definition>
+            <description>Retrieves record data for grounding a prompt template.</description>
+            <label>Record Snapshot</label>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>true</isRequired>
+                <parameterName>recordId</parameterName>
+                <valueExpression>{!$Input:Case.Id}</valueExpression>
+            </parameters>
+            <referenceName>RecordSnapshot:Case</referenceName>
+        </templateDataProviders>
+        <templateDataProviders>
+            <definition>apex://CaseActivitiesForPrompt</definition>
+            <label>Case Activities</label>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>true</isRequired>
+                <parameterName>caseId</parameterName>
+                <valueExpression>{!$Input:Case.Id}</valueExpression>
+            </parameters>
+            <referenceName>Apex:CaseActivitiesForPrompt</referenceName>
+        </templateDataProviders>
+        <templateDataProviders>
+            <definition>apex://CaseTranscriptsForPrompt</definition>
+            <label>Case Call Transcripts</label>
+            <parameters>
+                <definition>primitive://String</definition>
+                <isRequired>true</isRequired>
+                <parameterName>caseId</parameterName>
+                <valueExpression>{!$Input:Case.Id}</valueExpression>
+            </parameters>
+            <referenceName>Apex:CaseTranscriptsForPrompt</referenceName>
+        </templateDataProviders>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

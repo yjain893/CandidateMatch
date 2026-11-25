@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Reads a saved call transcript and returns the case subject, description and category as JSON.</description>
+    <developerName>Create_Case_From_Transcript</developerName>
+    <masterLabel>Create Case From Transcript</masterLabel>
+    <templateVersions>
+        <content>You summarise customer service phone calls so a support case can be opened.
+
+Read the transcript below and answer with ONE JSON object and nothing else, no markdown:
+{"subject": "...", "description": "...", "category": "...", "confidence": "high|medium|low"}
+
+Rules:
+- subject: one line, at most 120 characters, saying what the caller wanted.
+- description: 2 to 6 sentences: what the caller asked, what the agent did, and the outcome (resolved, pending, escalated, verification failed).
+- Never include card numbers, passwords, email addresses or full street addresses in any field.
+- category: choose exactly one value from this list: {!$Input:Categories}
+- If the transcript is empty or unclear, use category "Other", confidence "low", and say so in the description.
+
+Transcript:
+{!$Input:Conversation.Transcript__c}</content>
+        <inputs>
+            <apiName>Conversation</apiName>
+            <definition>SOBJECT://Chat_Conversation__c</definition>
+            <masterLabel>Conversation</masterLabel>
+            <referenceName>Input:Conversation</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>Categories</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Categories</masterLabel>
+            <referenceName>Input:Categories</referenceName>
+            <required>true</required>
+        </inputs>
+        <status>Draft</status>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

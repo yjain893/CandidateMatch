@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Est_Voice_Output_Tokens__c</fullName>
+    <label>Est. Voice Output Tokens</label>
+    <description>Estimated tokens of sound produced by the voice on this call (seconds times about 25, not Google's exact count).</description>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>
