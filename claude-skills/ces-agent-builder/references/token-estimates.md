@@ -1,0 +1,12 @@
+# Estimated token counts per call
+
+**Why an estimate:** a callback gets the model's text only (`llm_response` has just `content`, `partial`, `turn_complete`; the callback context and session events carry no usage; verified in the console 25 Nov 2026). Real counts are in the platform trace only: Cloud Logging log `ces.googleapis.com/responses`, `jsonPayload.diagnosticInfo.rootSpan.childSpans` with `LLM` spans (`input token count`, `output token count`, `thought token count`) and `TTS` spans (`tts input token count`, `tts output token count`), labels.session_id = the session id. Needs "Enable Cloud Logging" on in the app's logging settings.
+If exact numbers are needed, read those logs after the call (scheduled job) instead.
+
+**Templates:** `token_count_input` (beforeModel, must be the LAST beforeModel callback) and `token_count_output` (afterModel, must be BEFORE `save_transcript_on_end`); used as a pair. Both only measure and return nothing. Variables: `tokens_in_est`, `tokens_out_est`, `tts_in_est`, `tts_out_est`, `tokens_total_est` (+ `token_calibration` when `debug`). The `save_transcript` tool takes `variable_fields: {variable: SalesforceField}` and sends the rounded values.
+Params: `chars_per_token_in` 3.5, `fixed_overhead_chars` 0, `chars_per_token_out` 3.5, `chars_per_token_tts` 3, `words_per_second` 2.2, `tts_tokens_per_second` 25, `debug`.
+
+**Formulas:** input = letters sent / ratio (every model call re-reads instructions, tools, all earlier turns, tool results); output = letters written (text + tool call name and args) / ratio; voice in = spoken letters / ratio; voice out = spoken words / words-per-second * 25. Rates seen in one agent: 25 tokens per second of speech (two logs, exact), 2.2 words per second, about 2.9 letters per voice-input token. 3.5 letters per model token is a generic starting guess.
+
+**Unverified until a calibration run:** whether `llm_request` carries the system instruction and tool definitions (the debug log prints `instr=` and `tools=`; if 0, set `fixed_overhead_chars`); that before-model callbacks which answer early skip the after-model counter; the ratio for a given agent.
+**Known gaps:** guardrail model tokens, text the end hook adds, hang-ups with no saved transcript. Text returned directly by a callback is not voiced and is not counted.

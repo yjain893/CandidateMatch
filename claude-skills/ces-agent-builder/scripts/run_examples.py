@@ -53,6 +53,35 @@ def guard_problems():
     return problems
 
 
+def callback_variant_problems():
+    """The greeting callback has four variants and the closing hook an optional text: test the ones the examples do not build."""
+    sys.path.insert(0, HERE)
+    import selftest_callbacks as t
+    from ces_lib import callbacks
+    problems = []
+    cases = []
+    for speak in ("model", "callback"):
+        for mode in ("direct", "tool_call"):
+            params = {"speak": speak, "mode": mode, "greeting": "Hello {caller_name}, you have reached {company_name}.", "greeting_unknown": "Hello, you have reached {company_name}."}
+            cases.append(("greet_known_caller speak=%s mode=%s" % (speak, mode), "greet_known_caller", params, t.t_greet))
+    cases.append(("greet_known_caller tell_model", "greet_known_caller", {"speak": "model", "mode": "direct", "tell_model": True}, t.t_greet))
+    cases.append(("lookup_caller_on_start", "lookup_caller_on_start", {"tool": "identify_caller"}, t.t_lookup_agent))
+    cases.append(("save_transcript_on_end with closing texts", "save_transcript_on_end",
+                  {"closing_texts": {"completed": "Thanks. Goodbye.", "verification failed": "Sorry, I cannot verify you. Goodbye.", "escalated": "Connecting you now."}}, t.t_save_on_end))
+    cases.append(("save_transcript_on_end without closing texts", "save_transcript_on_end", {}, t.t_save_on_end))
+    cases.append(("token_count_input", "token_count_input", {"chars_per_token_in": 3.5}, t.t_token_in))
+    cases.append(("token_count_input debug and overhead", "token_count_input", {"chars_per_token_in": 4, "fixed_overhead_chars": 7000, "debug": True}, t.t_token_in))
+    cases.append(("token_count_output", "token_count_output", {}, t.t_token_out))
+    cases.append(("token_count_output custom rates", "token_count_output", {"chars_per_token_out": 4, "chars_per_token_tts": 2.9, "words_per_second": 2.5, "tts_tokens_per_second": 25, "debug": True}, t.t_token_out))
+    for label, template, params, test in cases:
+        _fn, src, _vars = callbacks.render_callback({"template": template, "params": params}, label)
+        ns = {"Part": t.Part, "LlmResponse": t.LlmResponse, "LlmRequest": t.LlmRequest, "CallbackContext": t.CallbackContext, "Content": t.Content}
+        exec(compile(src, label, "exec"), ns)
+        for p in test(src, ns):
+            problems.append("%s: %s" % (label, p))
+    return problems
+
+
 def main():
     specs = sorted(glob.glob(os.path.join(SKILL, "assets", "example-*", "spec.json")))
     bad = 0
@@ -78,7 +107,7 @@ def main():
         print("%s %-28s %s%s" % (status, os.path.basename(os.path.dirname(spec)), " | ".join(l.strip() for l in lines), cb_note))
         if r.returncode != 0:
             print(r.stdout[-1500:], r.stderr[-800:])
-    for problem in guard_problems():
+    for problem in guard_problems() + callback_variant_problems():
         bad += 1
         print("FAIL guard: " + problem)
     print("\n%d example(s), %d failing" % (len(specs), bad))

@@ -127,7 +127,20 @@ __COMMON__
     put("duration_seconds", _seconds_between(first, ended) if first else None)
     put("turn_count", turns)
     put("caller_verified", bool(context.variables.get("caller_verified")))
-    put("outcome", _outcome(ARGS.get("outcome")))
+    outcome = _outcome(ARGS.get("outcome"))
+    put("outcome", outcome)
+    put("closed_at", ended)
+    put("last_message_at", last or ended)
+    put("has_human_agent", outcome == "Escalated")
+    for sf_field, fixed in (CFG.get("fixed_values") or {}).items():
+      body[sf_field] = fixed
+    for variable, sf_field in (CFG.get("variable_fields") or {}).items():
+      raw = context.variables.get(variable)    # e.g. the estimated token totals kept by the token_count callbacks
+      try:
+        if raw is not None and str(raw).strip() != "":
+          body[sf_field] = int(round(float(raw)))
+      except (TypeError, ValueError):
+        print("tool: variable", variable, "is not a number; not sent")
     put("agent_name", (str(getattr(context, "agent_name", "") or "")[:80]) or None)
     for sf_field, variable in (CFG.get("links") or {}).items():
       value = context.variables.get(variable)

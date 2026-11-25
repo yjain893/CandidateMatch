@@ -403,14 +403,25 @@ def build(spec, base, out_dir, a):
                     if tool not in ag.get("tools", []):
                         raise SpecError("agent '%s': save_transcript_on_end calls '%s' but the agent's tools list does not include it" % (ag["displayName"], tool))
 
+    # token estimate: the output counter must run before the save-transcript hook (which can end the call), the input counter is a before-model callback
+    for ag in agents:
+        after = [c.get("template") for c in (ag.get("callbacks") or {}).get("afterModel", [])]
+        before = [c.get("template") for c in (ag.get("callbacks") or {}).get("beforeModel", [])]
+        if "token_count_output" in after and "save_transcript_on_end" in after and after.index("token_count_output") > after.index("save_transcript_on_end"):
+            raise SpecError("agent '%s': token_count_output must come BEFORE save_transcript_on_end in afterModel (the hook ends the call, so later callbacks would not run)" % ag["displayName"])
+        if ("token_count_input" in before) != ("token_count_output" in after):
+            raise SpecError("agent '%s': token_count_input (beforeModel) and token_count_output (afterModel) are used as a pair" % ag["displayName"])
+        if "token_count_input" in before and before.index("token_count_input") != len(before) - 1:
+            raise SpecError("agent '%s': token_count_input must be the LAST beforeModel callback (callbacks before it may answer without calling the model)" % ag["displayName"])
+
     # the start-of-call greeting calls the caller lookup tool: it must exist and sit on that agent
     for ag in agents:
-        for c in [c for lst in (ag.get("callbacks") or {}).values() for c in lst if c.get("template") == "greet_known_caller"]:
+        for c in [c for lst in (ag.get("callbacks") or {}).values() for c in lst if c.get("template") in ("greet_known_caller", "lookup_caller_on_start")]:
             tool = (c.get("params") or {}).get("tool", "identify_caller")
             if tool not in tool_names:
-                raise SpecError("agent '%s': greet_known_caller calls tool '%s', which is not defined in tools" % (ag["displayName"], tool))
+                raise SpecError("agent '%s': the caller lookup callback calls tool '%s', which is not defined in tools" % (ag["displayName"], tool))
             if tool not in ag.get("tools", []):
-                raise SpecError("agent '%s': greet_known_caller calls '%s' but the agent's tools list does not include it" % (ag["displayName"], tool))
+                raise SpecError("agent '%s': the caller lookup callback calls '%s' but the agent's tools list does not include it" % (ag["displayName"], tool))
 
     # the console always writes this (empty) file; mirror it
     write_text(os.path.join(root, "pythonEnvFiles", "pythonEnvFiles.json"), "{\n}")
@@ -430,6 +441,10 @@ def build(spec, base, out_dir, a):
         for op in ts.get("operations", []):
             if op.get("kind") == "soql_query" and op.get("q_pattern"):
                 query_patterns["%s_%s" % (ts["name"], op["operationId"])] = op["q_pattern"]
+            if op.get("kind") == "apex_rest":
+                for prm in op.get("params", []):
+                    if prm.get("name") == "q" and prm.get("pattern"):
+                        query_patterns["%s_%s" % (ts["name"], op["operationId"])] = prm["pattern"]
     with open(os.path.join(sd, "scenarios.json"), "w") as fh:
         json.dump({"package": root, "scenarios": scenarios, "query_patterns": query_patterns}, fh, indent=1)
 

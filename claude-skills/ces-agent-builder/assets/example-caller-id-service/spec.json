@@ -323,10 +323,9 @@
           {
             "template": "greet_known_caller",
             "params": {
-              "greeting": "Hello {caller_name}, you have reached {company_name} Customer Service Number. How can I help you today?",
-              "greeting_unknown": "Hello, you have reached {company_name} Customer Service Number. How can I help you today?",
               "tool": "identify_caller",
-              "mode": "direct"
+              "mode": "direct",
+              "speak": "model"
             }
           },
           {
@@ -351,7 +350,20 @@
           {
             "template": "save_transcript_on_end",
             "params": {
-              "tool": "save_transcript"
+              "tool": "save_transcript",
+              "closing_texts": {
+                "completed": "Thanks for reaching out to us. Have a good day.",
+                "verification failed": "I'm sorry, I'm not able to verify you today. Thank you for calling. Goodbye.",
+                "escalated": "I'm connecting you with a team member now."
+              }
+            }
+          }
+        ],
+        "beforeAgent": [
+          {
+            "template": "lookup_caller_on_start",
+            "params": {
+              "tool": "identify_caller"
             }
           }
         ]

@@ -116,13 +116,33 @@ def build_schema(instance_url, api_version, title, operations, relative=False):
                 raise SpecError("%s: apex_rest path must start with /services/apexrest/" % oid)
             params = []
             for prm in op.get("params", []):
+                schema = {"type": JSON_TYPES.get(prm.get("type", "string"), "string")}
+                if prm.get("pattern"):
+                    schema["pattern"] = prm["pattern"]
                 params.append({"name": prm["name"], "in": prm.get("in", "query"), "required": bool(prm.get("required", True)),
-                               "description": prm.get("description", ""), "schema": {"type": JSON_TYPES.get(prm.get("type", "string"), "string")}})
-            item = {"operationId": oid, "summary": desc or oid, "description": desc, "parameters": params,
-                    "responses": {"200": {"description": "Result", "content": {"application/json": {"schema": {"type": "object", "properties": {k: {"type": JSON_TYPES.get(v, "string")} for k, v in (op.get("response_fields") or {}).items()}}}}}, "default": err}}
+                               "description": prm.get("description", ""), "schema": schema})
+            # response_fields: {"name": "string"} for plain values, or {"records": ["Id", {"name": "Total", "type": "number"}]} for a list of records
+            props = {}
+            for k, v in (op.get("response_fields") or {}).items():
+                if isinstance(v, list):
+                    item_props = {}
+                    for f in v:
+                        fname, ftype = (f, "string") if isinstance(f, str) else (f["name"], f.get("type", "string"))
+                        item_props[fname] = {"type": JSON_TYPES.get(ftype, ftype)}
+                    props[k] = {"type": "array", "items": {"type": "object", "properties": item_props}}
+                else:
+                    props[k] = {"type": JSON_TYPES.get(v, "string")}
+            ok_code = "204" if method in ("patch", "delete") and not props else "200"
+            responses = {ok_code: {"description": "Result"}, "default": err}
+            if props:
+                responses[ok_code]["content"] = {"application/json": {"schema": {"type": "object", "properties": props}}}
+            item = {"operationId": oid, "summary": desc or oid, "description": desc, "parameters": params, "responses": responses}
             if op.get("body_fields"):
-                props, required = _props(op["body_fields"])
-                item["requestBody"] = {"required": True, "content": {"application/json": {"schema": {"type": "object", "properties": props, "required": required}}}}
+                bprops, required = _props(op["body_fields"])
+                schema = {"type": "object", "properties": bprops, "additionalProperties": False}
+                if required:
+                    schema["required"] = required
+                item["requestBody"] = {"required": True, "content": {"application/json": {"schema": schema}}}
             add(path, method, item)
         else:
             raise SpecError("toolset operation %s: unknown kind %s" % (oid, kind))

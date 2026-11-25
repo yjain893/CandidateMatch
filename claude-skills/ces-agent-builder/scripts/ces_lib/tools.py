@@ -6,6 +6,7 @@ sandbox calls the function whose name equals the tool name. See references/tools
 import ast
 import os
 import re
+from json import dumps as json_dumps
 
 from .common import SpecError, need, py_literal
 
@@ -595,6 +596,8 @@ def build_save_transcript(name, p, where):
     cfg = {"sobject": p.get("sobject", "Voice_Call_Transcript__c"), "external_id_field": p.get("external_id_field", "Session_Id__c"),
            "fields": p.get("fields", DEFAULT_TRANSCRIPT_FIELDS),
            "links": p.get("links", {"Order__c": "verified_record_id", "Account__c": "verified_scope_id"}),
+           "fixed_values": p.get("fixed_values", {}),
+           "variable_fields": p.get("variable_fields", {}),
            "redact_patterns": p.get("redact_patterns", DEFAULT_REDACT), "max_chars": int(p.get("max_chars", 120000)),
            "max_attempts": int(p.get("max_attempts", 3)), "path_param": p.get("path_param", "session_id"),
            "connector_tool": p.get("connector_tool", "")}
@@ -621,6 +624,10 @@ def _save_scenarios(tool, cfg):
         link_ids[sf_field] = "801000000000001AAA" if low.startswith("order") else "003000000000001AAA" if low.startswith("contact") else "001000000000001AAA"
         gv[variable] = link_ids[sf_field]
     link_asserts = ['"%s": "%s"' % (f, i) for f, i in link_ids.items()]
+    fm = cfg["fields"]
+
+    def has(key, literal):
+        return ['"%s": %s' % (fm[key], literal)] if key in fm else []
     base = {"tool": tool, "args": {}, "variables": dict(gv), "events": ev, "session_id": "sess-123", "agent_name": "Root agent"}
     ok_any = {"when": "connector://" if connector else "PATCH ", "status": 204, "json": {}}
 
@@ -632,18 +639,17 @@ def _save_scenarios(tool, cfg):
 
     out = [sc("saved: turns, links, flags and duration in the request", responses=[ok_any], args={"outcome": "completed"}, expect={"ok": True},
               calls_must_contain=["Caller: I want to check my order.", "Agent: Sure. What is the order number?"] + link_asserts + [
-                                  '"Caller_Verified__c": true', '"Duration_Seconds__c": 100', '"Turn_Count__c": 2',
-                                  '"Outcome__c": "Completed"', "sess-123"],
+                                  ] + has("caller_verified", "true") + has("duration_seconds", "100") + has("turn_count", "2") + has("outcome", '"Completed"') + ["sess-123"],
               calls_must_not_contain=["<event>", "<context>", "interrupted", "4111 1111 1111 1111", "tok-test"]),
            sc("a turn that holds only a platform note is not a caller turn", responses=[ok_any], args={"outcome": "completed"}, expect={"ok": True},
               events=ev + [{"author": "user", "text": "<context>agent speaking was interrupted. user only heard 'Sure' in the last agent response.</context>", "timestamp": 1800000110}],
-              calls_must_contain=['"Turn_Count__c": 2', '"Duration_Seconds__c": 100'], calls_must_not_contain=["<context>", "interrupted"]),
+              calls_must_contain=has("turn_count", "2") + has("duration_seconds", "100"), calls_must_not_contain=["<context>", "interrupted"]),
            sc("escalation hint becomes the Escalated outcome", responses=[ok_any], args={"outcome": "escalated"}, expect={"ok": True},
-              calls_must_contain=['"Outcome__c": "Escalated"']),
+              calls_must_contain=has("outcome", '"Escalated"') or ["sess-123"]),
            sc("verification-failed hint becomes the Verification failed outcome", responses=[ok_any], args={"outcome": "verification failed"},
-              expect={"ok": True}, calls_must_contain=['"Outcome__c": "Verification failed"'], calls_must_not_contain=['"Outcome__c": "Completed"']),
+              expect={"ok": True}, calls_must_contain=has("outcome", '"Verification failed"') or ["sess-123"], calls_must_not_contain=has("outcome", '"Completed"')),
            sc("never verified and out of attempts -> Verification failed", responses=[ok_any], variables={"caller_verified": False, "verification_attempts": 3},
-              expect={"ok": True}, calls_must_contain=['"Outcome__c": "Verification failed"', '"Caller_Verified__c": false'], calls_must_not_contain=['"%s"' % f for f in link_ids]),
+              expect={"ok": True}, calls_must_contain=has("outcome", '"Verification failed"') + has("caller_verified", "false") or ["sess-123"], calls_must_not_contain=['"%s"' % f for f in link_ids]),
            sc("very long transcript is cut at the limit", responses=[ok_any], events=[{"author": "user", "text": "x" * 200000}],
               expect={"ok": True}, calls_must_contain=["[transcript truncated]"]),
            sc("no session id -> invalid_input, nothing sent", responses=[], session_id="", expect={"ok": False, "error": "invalid_input"}, expect_no_calls=True),
@@ -658,7 +664,7 @@ def _save_scenarios(tool, cfg):
     else:
         flat_ok = {"when": "connector://", "status": 201, "json": {}}
         out += [sc("connector: flat argument shape works first time", responses=[flat_ok], expect={"ok": True}, expect_call_count=1,
-                   calls_must_contain=['"Transcript__c"', '"session_id": "sess-123"']),
+                   calls_must_contain=['"%s"' % fm["transcript"], '"session_id": "sess-123"']),
                 sc("connector: falls back to the body shape when the flat shape is refused",
                    responses=[{"when": '"body"', "status": 204, "json": {}}, {"when": "connector://", "status": 400, "json": {}}],
                    expect={"ok": True}, expect_call_count=2, calls_must_contain=['"body": {']),
@@ -666,6 +672,24 @@ def _save_scenarios(tool, cfg):
                    expect={"ok": False, "error": "salesforce_error", "system_error": True, "code": 400}, expect_call_count=3),
                 sc("connector: 401 stops at once -> salesforce_auth_failed", responses=[{"when": "connector://", "status": 401, "json": {}}],
                    expect={"ok": False, "error": "salesforce_auth_failed", "system_error": True}, expect_call_count=1)]
+    for variable, sf_field in cfg.get("variable_fields", {}).items():
+        out.append(sc("variable %s is sent as %s (rounded whole number)" % (variable, sf_field), responses=[ok_any], expect={"ok": True},
+                      variables=dict(gv, **{variable: 1234.6}), calls_must_contain=['"%s": 1235' % sf_field]))
+        out.append(sc("zero variable %s is sent as 0" % variable, responses=[ok_any], expect={"ok": True},
+                      variables=dict(gv, **{variable: 0}), calls_must_contain=['"%s": 0' % sf_field]))
+    if "has_human_agent" in cfg["fields"] or cfg["fixed_values"]:
+        mapped = cfg["fields"]
+        if "has_human_agent" in mapped:
+            out.append(sc("escalated call sets the human agent flag", responses=[ok_any], args={"outcome": "escalated"}, expect={"ok": True},
+                          calls_must_contain=['"%s": true' % mapped["has_human_agent"]]))
+            out.append(sc("completed call clears the human agent flag", responses=[ok_any], args={"outcome": "completed"}, expect={"ok": True},
+                          calls_must_contain=['"%s": false' % mapped["has_human_agent"]]))
+        for key in ("closed_at", "last_message_at"):
+            if key in mapped:
+                out.append(sc("%s is filled in" % key, responses=[ok_any], expect={"ok": True}, calls_must_contain=['"%s": "20' % mapped[key]]))
+        for sf_field, fixed in cfg["fixed_values"].items():
+            out.append(sc("fixed value %s is always sent" % sf_field, responses=[ok_any], expect={"ok": True},
+                          calls_must_contain=['"%s": %s' % (sf_field, json_dumps(fixed))]))
     return out
 
 
@@ -745,6 +769,10 @@ def render_tool(name, template, params, sf, where):
         if rest_branch in src:
             src = src.replace(rest_branch, "  def _query(soql):\n    return _query_via_connector(soql)\n")
         src = "\n".join(l for l in src.split("\n") if not l.startswith(("  INSTANCE_URL =", "  API_VERSION =", "  TOKEN_VARIABLE =")))
+    if not b["cfg"].get("scope_field"):
+        # no row-level scope configured: drop the scope code, so the tool does not mention verified_scope_id at all
+        # (the console lists every tool that mentions a variable when you try to delete it)
+        src = src.replace("    scope_sql, scope_err = _scope_clause()\n    if scope_err:\n      return scope_err\n", "").replace(" + scope_sql", "")
     src = _prune_helpers(src)
     if uses_optional:
         src = "from typing import Optional\n\n" + src

@@ -89,3 +89,5 @@ Inspect it (`validate_package.py <path> --inspect`), copy its instructions and t
 
 ## Style of your messages to the user
 Plain words, short. Lead with what you need or what happened. Tables for tools, variables and guardrails. Say plainly what is untested.
+
+- Token counts per call: offer the `token_count_input` / `token_count_output` callbacks (estimates, `references/token-estimates.md`); exact numbers only come from Cloud Logging.

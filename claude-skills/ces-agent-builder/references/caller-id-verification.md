@@ -5,8 +5,9 @@ Built and tested offline (Nov 2026); **not yet run in the console**. Example: `a
 ## The pattern
 ```
 call arrives, platform fills telephony-caller-id
-  -> before-model callback greet_known_caller runs tool identify_caller (one Contact on the number, with an Account)
-  -> greeting by first name (or without a name); caller_status = known | unknown
+  -> before-agent callback lookup_caller_on_start runs tool identify_caller (one Contact on the number, with an Account) and stores the variables
+  -> before-model callback greet_known_caller adds the caller to the model's first request (variables set during a model turn arrive one turn late)
+  -> the agent says the greeting from its instructions, by first name or without; caller_status = known | unknown
 caller says what they need -> verify_contact_email (spoken email compared in code, 3 tries)
   -> get_order_status / get_shipping_address (lookup_record) -> update_shipping_address (update_record through a connector operation)
 end_session -> save_transcript_on_end (transcript row)
@@ -37,7 +38,8 @@ The query fetches contacts whose phone or mobile ends with the last four digits 
 - Email check (a wrong then a right email), order status, reading the address, and an address change on a Draft order saved in Salesforce through the connector's PATCH operation.
 
 ## Still unverified
-- Why one Preview start was silent (the cause was not found: see lessons-learned 33). The callback and the instructions now cover the likely causes.
+- A greeting made by the callback itself showed in the chat but was not heard (lessons-learned 33). The default is now that the agent's model says the greeting; to be confirmed by listening on a call.
+- The goodbye: the model once ended a call silently (lessons-learned 34); the hook now adds closing words in that case. Whether callback-added words are voiced is not yet confirmed.
 - Which of the three request body shapes the connector accepted (the tool logs it).
 - An address change on an Activated order, and which state and country values Salesforce accepts (a rolled-back Apex test is provided as a file for the user to run).
 - Real caller ID on a phone call; `mode: tool_call`; transcripts for calls ended by a callback (probably not saved).

@@ -49,6 +49,16 @@ class Part:
         return cls(text=content, kind="custom", extra={"disable_barge_in": disable_barge_in})
 
 
+class Ev:
+    """A session event: who said what."""
+    def __init__(self, author, text):
+        self.author = author
+        self.content = Content([Part.from_text(text)])
+
+    def is_user(self):
+        return self.author == "user"
+
+
 class Content:
     def __init__(self, parts):
         self.parts = parts
@@ -78,7 +88,8 @@ class LlmRequest:
 
 
 class CallbackContext:
-    def __init__(self, variables=None, user_input=None, agent_output=None):
+    def __init__(self, variables=None, user_input=None, agent_output=None, events=None):
+        self.events = events or []
         self.variables = variables or {}
         self.state = self.variables
         self._user, self._agent = user_input or [], agent_output or []
@@ -121,8 +132,9 @@ class Wrapped:
 def identify(src):
     """Which template a callback file comes from, read from markers in its code. The console export names the folders
     after_model_callbacks_01 and so on, so the template name is not in the path (and exports may hold hand-written callbacks)."""
-    markers = (("LOOKUP_TOOL =", "greet_known_caller"), ("SAVE_TOOL =", "save_transcript_on_end"), ("hide_tool(", "hide_tools"), ("GREETING =", "static_greeting"),
+    markers = (("def before_agent_callback(", "lookup_caller_on_start"), ("LOOKUP_TOOL =", "greet_known_caller"), ("SAVE_TOOL =", "save_transcript_on_end"), ("hide_tool(", "hide_tools"), ("GREETING =", "static_greeting"),
                ("WATCHED =", "escalate_on_system_error"), ("REQUIRED =", "mandatory_text"), ("PATTERNS =", "redact_output"),
+               ("CHARS_PER_TOKEN_OUT =", "token_count_output"), ("CHARS_PER_TOKEN =", "token_count_input"),
                ("no user activity", "inactivity_prompt"))
     for needle, name in markers:
         if needle in src:
@@ -132,7 +144,7 @@ def identify(src):
 
 def load(path):
     src = open(path, encoding="utf-8").read()
-    ns = {"Part": Part, "LlmResponse": LlmResponse, "LlmRequest": LlmRequest, "CallbackContext": CallbackContext}
+    ns = {"Part": Part, "LlmResponse": LlmResponse, "LlmRequest": LlmRequest, "CallbackContext": CallbackContext, "Content": Content}
     exec(compile(src, path, "exec"), ns)
     return src, ns
 
@@ -250,8 +262,9 @@ def t_save_on_end(src, ns):
         got = r.content.parts[1].function_call.args.get("outcome")
         if got != want:
             out.append("%s: outcome %r, expected %r" % (label, got, want))
-    r = run([Part.from_function_call("end_session", {"reason": "system problem"})])
-    if r is None or r.content.parts[0].function_call.args.get("outcome") != "system error":
+    r = run([Part.from_text("Sorry."), Part.from_function_call("end_session", {"reason": "system problem"})])
+    save_parts = [p for p in r.content.parts if p.function_call and p.function_call.name == tool] if r else []
+    if not save_parts or save_parts[0].function_call.args.get("outcome") != "system error":
         out.append("a system reason did not become the 'system error' outcome")
     if run([Part.from_text("Still talking.")]) is not None:
         out.append("it acted on a turn that does not end the call")
@@ -259,84 +272,192 @@ def t_save_on_end(src, ns):
         out.append("it added the save call twice")
     if fn(CallbackContext(), LlmResponse(None)) is not None:
         out.append("it failed on an empty response instead of ignoring it")
+    closing = eval(re.search(r"CLOSING = (\{.*\})", src).group(1))
+    ends = {"completed": {"reason": "success"}, "escalated": {"reason": "escalate_to_human", "session_escalated": True},
+            "verification failed": {"reason": "verification_failed"}, "system error": {"reason": "system problem"}}
+    for outcome, args in ends.items():
+        silent = run([Part.from_function_call("end_session", args)])
+        if outcome in closing:
+            if silent is None or names(silent) != ["text", tool, "end_session"] or texts(silent)[0] != closing[outcome]:
+                out.append("%s: a call ended without words must get the closing text before the save and end_session (got %s)" % (outcome, names(silent) if silent else None))
+            talked = run([Part.from_text("My own goodbye."), Part.from_function_call("end_session", args)])
+            if talked is None or texts(talked) != ["My own goodbye."]:
+                out.append("%s: the model's own words must be left alone (got %s)" % (outcome, texts(talked) if talked else None))
+        elif silent is None or "text" in names(silent):
+            out.append("%s: no closing text is configured, so none may be added" % outcome)
     return out
 
 
 def t_greet(src, ns):
     fn, out = ns["before_model_callback"], []
     mode = re.search(r"MODE = '([^']+)'", src).group(1)
+    speak = re.search(r"SPEAK = '([^']+)'", src).group(1)
+    tell = "TELL = True" in src
     known = {"caller_status": "known", "first_name": "John", "email": "john@example.com", "contact_id": "003000000000001AAA", "account_id": "001000000000001AAA"}
     unknown = {"caller_status": "unknown", "first_name": ""}
     start = [Part.from_text("<event>session start</event>")]
+    want_known = {"caller_status": "known", "caller_name": "John", "caller_email": "john@example.com", "caller_contact_id": "003000000000001AAA", "caller_account_id": "001000000000001AAA"}
 
-    def ctx():
-        return CallbackContext({"company_name": "Abbott"}, list(start))
-
-    def reply_to_call(result):
-        # tool_call mode: the greeting is built when the tool result is back in the request
-        return LlmRequest([Part(function_response=FunctionResponse("identify_caller", {"result": result} if "caller_status" in result else result), kind="resp")])
+    def ctx(cls=CallbackContext):
+        return cls({"company_name": "Abbott"}, list(start))
 
     def last(r):
         return texts(r)[-1] if r is not None and texts(r) else ""
+
+    def silent_or_greets(label, r, name_expected):
+        # speak model: the callback never answers (the agent says the greeting); speak callback: it answers, by name or not
+        if speak == "model":
+            if r is not None:
+                out.append("%s: with speak model the callback must not answer, it said %r" % (label, last(r)))
+        elif ("John" in last(r)) != name_expected or "Abbott" not in last(r):
+            out.append("%s: greeting is %r" % (label, last(r)))
+
+    def reply_to_call(result):
+        return LlmRequest([Part(function_response=FunctionResponse("identify_caller", {"result": result}), kind="resp")])
+
+    def noted(req):
+        return " ".join(p.text for p in req.contents[-1].parts if p.text)
 
     if mode == "direct":
         for label, result in (("a dict", known), ("a wrapped dict", {"result": known}), ("a response object", Wrapped(known))):
             ns["tools"] = FakeTool(result)
             c = ctx()
-            r = fn(c, LlmRequest())
-            if "John" not in last(r) or "Abbott" not in last(r) or "{" in last(r):
-                out.append("known caller (%s): greeting is %r" % (label, last(r)))
-            want = {"caller_status": "known", "caller_name": "John", "caller_email": "john@example.com", "caller_contact_id": "003000000000001AAA", "caller_account_id": "001000000000001AAA"}
-            for k, v in want.items():
+            req = LlmRequest()
+            silent_or_greets("known caller (%s)" % label, fn(c, req), True)
+            if speak == "model" and "has just connected" not in noted(req):
+                out.append("known caller (%s): the model must get the cue to speak first (got %r)" % (label, noted(req)))
+            if speak == "model" and not tell and "caller_name" in noted(req):
+                out.append("known caller (%s): tell_model is off, so no caller note is wanted (got %r)" % (label, noted(req)))
+            if speak == "model" and tell and ("caller_name: John" not in noted(req) or "caller_status: known" not in noted(req)):
+                out.append("known caller (%s): the model must be told the name in its own request (got %r)" % (label, noted(req)))
+            for k, v in want_known.items():
                 if c.variables.get(k) != v:
                     out.append("known caller (%s): variable %s = %r, expected %r" % (label, k, c.variables.get(k), v))
         if ns["tools"].calls != [("identify_caller", {"include_details": True})]:
             out.append("the lookup tool was not called once with include_details: %s" % ns["tools"].calls)
         ns["tools"] = FakeTool(unknown)
         c = ctx()
-        r = fn(c, LlmRequest())
-        if "John" in last(r) or "Abbott" not in last(r) or "Hello," not in last(r):
-            out.append("unknown caller: greeting is %r" % last(r))
+        req = LlmRequest()
+        silent_or_greets("unknown caller", fn(c, req), False)
+        if speak == "model" and tell and ("caller_status: unknown" not in noted(req) or "caller_name" in noted(req)):
+            out.append("unknown caller: the model must be told the caller is unknown, with no name (got %r)" % noted(req))
         if c.variables.get("caller_status") != "unknown" or c.variables.get("caller_email"):
             out.append("unknown caller: variables %s" % c.variables)
         ns["tools"] = FakeTool(error=RuntimeError("boom"))
         c = ctx()
-        r = fn(c, LlmRequest())
-        if "Abbott" not in last(r) or c.variables.get("caller_status") != "unknown":
-            out.append("a failing lookup must still greet, as an unknown caller (got %r, %s)" % (last(r), c.variables.get("caller_status")))
+        silent_or_greets("failing lookup", fn(c, LlmRequest()), False)
+        if c.variables.get("caller_status") != "unknown":
+            out.append("a failing lookup must leave the caller as unknown (got %s)" % c.variables.get("caller_status"))
         ns.pop("tools", None)
         c = ctx()
-        r = fn(c, LlmRequest())
-        if "Abbott" not in last(r) or c.variables.get("caller_status") != "unknown":
-            out.append("without the tools global the greeting must still work, as an unknown caller")
+        silent_or_greets("no tools global", fn(c, LlmRequest()), False)
+        if c.variables.get("caller_status") != "unknown":
+            out.append("without the tools global the caller must be unknown")
         ns["tools"] = FakeTool(dict(known, first_name=""))
         c = ctx()
         r = fn(c, LlmRequest())
-        if "Hello," not in last(r) or c.variables.get("caller_status") != "known":
-            out.append("a known contact without a first name gets the greeting without a name, and stays known (got %r)" % last(r))
+        if c.variables.get("caller_status") != "known" or (speak == "callback" and "Hello," not in last(r)):
+            out.append("a known contact without a first name stays known, and is greeted without a name (got %r, %s)" % (last(r), c.variables.get("caller_status")))
+
         class NoSetContext(CallbackContext):
             def set_variable(self, key, value):
                 raise RuntimeError("variables are read only here")
 
         ns["tools"] = FakeTool(known)
-        r = fn(NoSetContext({"company_name": "Abbott"}, list(start)), LlmRequest())
-        if "John" not in last(r) or "Abbott" not in last(r):
-            out.append("when variables cannot be set the caller must still be greeted by name (got %r)" % last(r))
+        req = LlmRequest()
+        silent_or_greets("variables cannot be set", fn(ctx(NoSetContext), req), True)
+        if speak == "model" and tell and "caller_name: John" not in noted(req):
+            out.append("when variables cannot be set the model must still be told the name in its request (got %r)" % noted(req))
+        # an earlier before-agent callback already looked the caller up: no second lookup, same note
         ns["tools"] = FakeTool(known)
-        if fn(CallbackContext({"company_name": "Abbott"}, [Part.from_text("hello")]), LlmRequest()) is not None or ns["tools"].calls:
-            out.append("a normal turn must neither greet nor call the tool")
+        c = CallbackContext({"company_name": "Abbott", "caller_status": "known", "caller_name": "John"}, list(start))
+        req = LlmRequest()
+        silent_or_greets("already looked up", fn(c, req), True)
+        if ns["tools"].calls:
+            out.append("a caller already looked up must not be looked up again (calls: %s)" % ns["tools"].calls)
+        if speak == "model" and tell and "caller_name: John" not in noted(req):
+            out.append("already looked up: the model must still be told the name (got %r)" % noted(req))
+        # a request that cannot be changed must not break the call
+        ns["tools"] = FakeTool(known)
+        req = LlmRequest()
+        req.contents[-1].parts = ()
+        try:
+            fn(ctx(), req)
+        except Exception as e:
+            out.append("a request that cannot be changed must not raise (%s)" % type(e).__name__)
+        # the first model input is only notes, not the session start event: it must still count as the start
+        ns["tools"] = FakeTool(known)
+        c = CallbackContext({"company_name": "Abbott"}, [Part.from_text("<state_update>caller_status: known</state_update>")],
+                            events=[Ev("user", "<event>session start</event>"), Ev("user", "<state_update>caller_status: known</state_update>")])
+        req = LlmRequest()
+        fn(c, req)
+        if speak == "model" and "has just connected" not in noted(req):
+            out.append("when the first input is only notes the model must still get the cue (got %r)" % noted(req))
+        # a later turn: the agent has spoken and the caller has answered
+        ns["tools"] = FakeTool(known)
+        later = [Ev("user", "<event>session start</event>"), Ev("agent", "Hello John."), Ev("user", "Hi")]
+        req = LlmRequest()
+        if fn(CallbackContext({"company_name": "Abbott"}, [Part.from_text("Hi")], events=later), req) is not None or ns["tools"].calls or noted(req):
+            out.append("a later turn must neither answer, look the caller up again, nor get the cue (calls %s, request %r)" % (ns["tools"].calls, noted(req)))
     else:
         r = fn(ctx(), LlmRequest())
         if r is None or names(r) != ["identify_caller"]:
             out.append("session start must ask for the lookup tool call (got %s)" % (names(r) if r else None))
         for label, result in (("known", known), ("unknown", unknown)):
-            r = fn(CallbackContext({"company_name": "Abbott"}, list(start)), reply_to_call(result))
-            if label == "known" and ("John" not in last(r) or "{" in last(r)):
-                out.append("known caller: greeting is %r" % last(r))
-            if label == "unknown" and ("John" in last(r) or "Abbott" not in last(r)):
-                out.append("unknown caller: greeting is %r" % last(r))
-        if fn(CallbackContext({}, [Part.from_text("hello")]), LlmRequest()) is not None:
+            silent_or_greets("%s caller, result back" % label, fn(CallbackContext({"company_name": "Abbott"}, list(start)), reply_to_call(result)), label == "known")
+        if fn(CallbackContext({}, [Part.from_text("hello")], events=[Ev("agent", "Hello.")]), LlmRequest()) is not None:
             out.append("a normal turn must be left alone")
+    return out
+
+
+def t_lookup_agent(src, ns):
+    fn, out = ns["before_agent_callback"], []
+    known = {"caller_status": "known", "first_name": "John", "email": "john@example.com", "contact_id": "003000000000001AAA", "account_id": "001000000000001AAA"}
+    unknown = {"caller_status": "unknown", "first_name": ""}
+    want_known = {"caller_status": "known", "caller_name": "John", "caller_email": "john@example.com", "caller_contact_id": "003000000000001AAA", "caller_account_id": "001000000000001AAA"}
+
+    def ctx(variables=None, cls=CallbackContext):
+        return cls(variables or {}, [Part.from_text("<event>session start</event>")])
+
+    for label, result in (("a dict", known), ("a wrapped dict", {"result": known}), ("a response object", Wrapped(known))):
+        ns["tools"] = FakeTool(result)
+        c = ctx()
+        if fn(c) is not None:
+            out.append("known caller (%s): the callback must not answer, only store the caller" % label)
+        for k, v in want_known.items():
+            if c.variables.get(k) != v:
+                out.append("known caller (%s): variable %s = %r, expected %r" % (label, k, c.variables.get(k), v))
+        if ns["tools"].calls != [("identify_caller", {"include_details": True})]:
+            out.append("the lookup tool was not called once with include_details: %s" % ns["tools"].calls)
+    ns["tools"] = FakeTool(unknown)
+    c = ctx()
+    fn(c)
+    if c.variables.get("caller_status") != "unknown" or c.variables.get("caller_email") or c.variables.get("caller_name"):
+        out.append("unknown caller: variables %s" % c.variables)
+    for label, tools in (("a failing lookup", FakeTool(error=RuntimeError("boom"))), ("no tools global", None)):
+        if tools is None:
+            ns.pop("tools", None)
+        else:
+            ns["tools"] = tools
+        c = ctx()
+        fn(c)
+        if c.variables.get("caller_status") != "unknown":
+            out.append("%s must leave the caller as unknown (got %s)" % (label, c.variables.get("caller_status")))
+    ns["tools"] = FakeTool(known)
+    c = ctx({"caller_status": "known", "caller_name": "John"})
+    fn(c)
+    if ns["tools"].calls:
+        out.append("a caller already looked up must not be looked up again (calls: %s)" % ns["tools"].calls)
+
+    class NoSetContext(CallbackContext):
+        def set_variable(self, key, value):
+            raise RuntimeError("variables are read only here")
+
+    ns["tools"] = FakeTool(known)
+    try:
+        fn(ctx(cls=NoSetContext))
+    except Exception as e:
+        out.append("variables that cannot be set must not break the call (%s)" % type(e).__name__)
     return out
 
 
@@ -353,9 +474,92 @@ def t_hide(src, ns):
     return out
 
 
+def _const(src, name):
+    return float(re.search(r"^\s*" + name + r" = ([0-9.]+)", src, re.M).group(1))
+
+
+def t_token_in(src, ns):
+    fn = ns["before_model_callback"]
+    cpt = _const(src, "CHARS_PER_TOKEN")
+    extra = int(_const(src, "FIXED_OVERHEAD_CHARS"))
+    out = []
+    ctx = CallbackContext()
+    req = LlmRequest([Part.from_text("x" * 350), Part.from_function_call("get_order_status", {"order_number": "112"})])
+    letters = 350 + len("get_order_status") + len(str({"order_number": "112"})) + extra
+    if fn(ctx, req) is not None:
+        out.append("it replaced the model call (it should only measure)")
+    want = int(round(letters / cpt))
+    if ctx.variables.get("tokens_in_est") != want:
+        out.append("tokens_in_est %s, expected %s" % (ctx.variables.get("tokens_in_est"), want))
+    fn(ctx, req)
+    if ctx.variables.get("tokens_in_est") != 2 * want:
+        out.append("the second call did not add to the running total")
+    # a request that also carries an instruction text and tool definitions is counted too
+    req.config.system_instruction = "y" * 700
+    req.config.tools = ["z" * 100]
+    ctx2 = CallbackContext()
+    fn(ctx2, req)
+    want2 = int(round((letters + 700 + len(str("z" * 100))) / cpt))
+    if ctx2.variables.get("tokens_in_est") != want2:
+        out.append("instruction and tool text not counted: %s, expected %s" % (ctx2.variables.get("tokens_in_est"), want2))
+    # a broken request must never break the call
+    class Broken:
+        @property
+        def contents(self):
+            raise RuntimeError("boom")
+    try:
+        if fn(CallbackContext(), Broken()) is not None:
+            out.append("a broken request changed the flow")
+    except Exception as e:
+        out.append("a broken request raised " + type(e).__name__)
+    return out
+
+
+def t_token_out(src, ns):
+    fn = ns["after_model_callback"]
+    cpt, cpt_tts = _const(src, "CHARS_PER_TOKEN_OUT"), _const(src, "CHARS_PER_TOKEN_TTS")
+    wps, tps = _const(src, "WORDS_PER_SECOND"), _const(src, "TTS_TOKENS_PER_SECOND")
+    out = []
+    ctx = CallbackContext(variables={"tokens_in_est": 1000})
+    text = "Your order status is Activated."
+    resp = LlmResponse.from_parts([Part.from_text(text), Part.from_function_call("save_transcript", {"outcome": "completed"})])
+    before = [(p.text, p.function_call) for p in resp.content.parts]
+    if fn(ctx, resp) is not None:
+        out.append("it replaced the reply (it should only measure)")
+    if [(p.text, p.function_call) for p in resp.content.parts] != before:
+        out.append("it changed the reply")
+    written = len(text) + len("save_transcript") + len(str({"outcome": "completed"}))
+    want = {"tokens_out_est": int(round(written / cpt)), "tts_in_est": int(round(len(text) / cpt_tts)),
+            "tts_out_est": int(round(len(text.split()) / wps * tps))}
+    for k, v in want.items():
+        if ctx.variables.get(k) != v:
+            out.append("%s %s, expected %s" % (k, ctx.variables.get(k), v))
+    total = 1000 + sum(want.values())
+    if ctx.variables.get("tokens_total_est") != total:
+        out.append("tokens_total_est %s, expected %s" % (ctx.variables.get("tokens_total_est"), total))
+    # a reply that is only a tool call is not spoken: no voice tokens
+    ctx2 = CallbackContext()
+    fn(ctx2, LlmResponse.from_parts([Part.from_function_call("get_order_status", {"order_number": "1"})]))
+    if ctx2.variables.get("tts_in_est") or ctx2.variables.get("tts_out_est"):
+        out.append("a tool-call-only reply was counted as speech")
+    if not ctx2.variables.get("tokens_out_est"):
+        out.append("a tool call was not counted as model output")
+    # partial streaming chunks are skipped, empty replies are ignored
+    ctx3 = CallbackContext()
+    part = LlmResponse.from_parts([Part.from_text("hello there")])
+    part.partial = True
+    fn(ctx3, part)
+    fn(ctx3, LlmResponse(None))
+    fn(ctx3, None)
+    if ctx3.variables.get("tokens_out_est"):
+        out.append("a partial or empty reply was counted")
+    return out
+
+
 TESTS = {"static_greeting": t_static_greeting, "escalate_on_system_error": t_escalate, "inactivity_prompt": t_inactivity,
          "redact_output": t_redact, "mandatory_text": t_mandatory, "save_transcript_on_end": t_save_on_end, "hide_tools": t_hide,
-         "greet_known_caller": t_greet}
+         "greet_known_caller": t_greet, "lookup_caller_on_start": t_lookup_agent,
+         "token_count_input": t_token_in, "token_count_output": t_token_out}
 
 
 def main():
