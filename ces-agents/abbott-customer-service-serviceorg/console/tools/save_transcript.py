@@ -23,6 +23,11 @@ def save_transcript(outcome: str = "") -> dict:
                 'has_human_agent': 'Has_Human_Agent__c'},
      'links': {},
      'fixed_values': {'Conversation_Status__c': 'Closed'},
+     'variable_fields': {'tokens_in_est': 'Est_Model_Input_Tokens__c',
+                         'tokens_out_est': 'Est_Model_Output_Tokens__c',
+                         'tts_in_est': 'Est_Voice_Input_Tokens__c',
+                         'tts_out_est': 'Est_Voice_Output_Tokens__c',
+                         'tokens_total_est': 'Est_Total_Tokens__c'},
      'redact_patterns': {'card number': '\\b(?:\\d[ -]?){13,16}\\b',
                          'social security number': '\\b\\d{3}-\\d{2}-\\d{4}\\b'},
      'max_chars': 120000,
@@ -232,6 +237,13 @@ def save_transcript(outcome: str = "") -> dict:
     put("has_human_agent", outcome == "Escalated")
     for sf_field, fixed in (CFG.get("fixed_values") or {}).items():
       body[sf_field] = fixed
+    for variable, sf_field in (CFG.get("variable_fields") or {}).items():
+      raw = context.variables.get(variable)    # e.g. the estimated token totals kept by the token_count callbacks
+      try:
+        if raw is not None and str(raw).strip() != "":
+          body[sf_field] = int(round(float(raw)))
+      except (TypeError, ValueError):
+        print("tool: variable", variable, "is not a number; not sent")
     put("agent_name", (str(getattr(context, "agent_name", "") or "")[:80]) or None)
     for sf_field, variable in (CFG.get("links") or {}).items():
       value = context.variables.get(variable)

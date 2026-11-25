@@ -118,6 +118,54 @@
         "type": "STRING",
         "default": ""
       }
+    },
+    {
+      "name": "tokens_in_est",
+      "description": "Estimated tokens the model read on this call (letters / chars_per_token).",
+      "schema": {
+        "type": "NUMBER",
+        "default": 0
+      }
+    },
+    {
+      "name": "tokens_out_est",
+      "description": "Estimated tokens the model wrote on this call.",
+      "schema": {
+        "type": "NUMBER",
+        "default": 0
+      }
+    },
+    {
+      "name": "tts_in_est",
+      "description": "Estimated tokens of text sent to the voice on this call.",
+      "schema": {
+        "type": "NUMBER",
+        "default": 0
+      }
+    },
+    {
+      "name": "tts_out_est",
+      "description": "Estimated tokens of sound produced by the voice on this call.",
+      "schema": {
+        "type": "NUMBER",
+        "default": 0
+      }
+    },
+    {
+      "name": "tokens_total_est",
+      "description": "Sum of the four estimates above.",
+      "schema": {
+        "type": "NUMBER",
+        "default": 0
+      }
+    },
+    {
+      "name": "token_calibration",
+      "description": "Calibration log: letter counts per model call. Only while token_estimate debug is on.",
+      "schema": {
+        "type": "STRING",
+        "default": ""
+      }
     }
   ],
   "defaultChannelProfile": {

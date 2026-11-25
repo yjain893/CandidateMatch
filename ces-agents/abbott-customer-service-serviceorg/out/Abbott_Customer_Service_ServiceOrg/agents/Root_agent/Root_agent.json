@@ -26,11 +26,17 @@
     },
     {
       "pythonCode": "agents/Root_agent/before_model_callbacks/before_model_callbacks_03/python_code.py"
+    },
+    {
+      "pythonCode": "agents/Root_agent/before_model_callbacks/before_model_callbacks_04/python_code.py"
     }
   ],
   "afterModelCallbacks": [
     {
       "pythonCode": "agents/Root_agent/after_model_callbacks/after_model_callbacks_01/python_code.py"
+    },
+    {
+      "pythonCode": "agents/Root_agent/after_model_callbacks/after_model_callbacks_02/python_code.py"
     }
   ]
 }

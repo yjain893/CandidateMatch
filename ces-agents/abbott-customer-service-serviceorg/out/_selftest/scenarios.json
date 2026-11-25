@@ -2025,6 +2025,536 @@
   },
   {
    "tool": "save_transcript",
+   "args": {},
+   "variables": {
+    "caller_verified": true,
+    "verification_attempts": 0,
+    "tokens_in_est": 1234.6
+   },
+   "events": [
+    {
+     "author": "user",
+     "text": "<event>session start</event>"
+    },
+    {
+     "author": "agent",
+     "text": "Hello, thank you for calling.",
+     "timestamp": 1800000000
+    },
+    {
+     "author": "user",
+     "text": "<context>agent speaking was interrupted. user only heard 'Hello, thank you' in the last agent response.</context> I want to check my order.",
+     "timestamp": 1800000030
+    },
+    {
+     "author": "agent",
+     "text": "Sure. What is the order number?",
+     "timestamp": 1800000040
+    },
+    {
+     "author": "user",
+     "text": "It is 102 and my card is 4111 1111 1111 1111.",
+     "timestamp": 1800000100
+    }
+   ],
+   "session_id": "sess-123",
+   "agent_name": "Root agent",
+   "name": "variable tokens_in_est is sent as Est_Model_Input_Tokens__c (rounded whole number)",
+   "responses": [
+    {
+     "when": "connector://",
+     "status": 204,
+     "json": {}
+    }
+   ],
+   "expect": {
+    "ok": true
+   },
+   "calls_must_contain": [
+    "\"Est_Model_Input_Tokens__c\": 1235"
+   ],
+   "transport": "connector",
+   "connector_tool": "query_salesforce_save_transcript"
+  },
+  {
+   "tool": "save_transcript",
+   "args": {},
+   "variables": {
+    "caller_verified": true,
+    "verification_attempts": 0,
+    "tokens_in_est": 0
+   },
+   "events": [
+    {
+     "author": "user",
+     "text": "<event>session start</event>"
+    },
+    {
+     "author": "agent",
+     "text": "Hello, thank you for calling.",
+     "timestamp": 1800000000
+    },
+    {
+     "author": "user",
+     "text": "<context>agent speaking was interrupted. user only heard 'Hello, thank you' in the last agent response.</context> I want to check my order.",
+     "timestamp": 1800000030
+    },
+    {
+     "author": "agent",
+     "text": "Sure. What is the order number?",
+     "timestamp": 1800000040
+    },
+    {
+     "author": "user",
+     "text": "It is 102 and my card is 4111 1111 1111 1111.",
+     "timestamp": 1800000100
+    }
+   ],
+   "session_id": "sess-123",
+   "agent_name": "Root agent",
+   "name": "zero variable tokens_in_est is sent as 0",
+   "responses": [
+    {
+     "when": "connector://",
+     "status": 204,
+     "json": {}
+    }
+   ],
+   "expect": {
+    "ok": true
+   },
+   "calls_must_contain": [
+    "\"Est_Model_Input_Tokens__c\": 0"
+   ],
+   "transport": "connector",
+   "connector_tool": "query_salesforce_save_transcript"
+  },
+  {
+   "tool": "save_transcript",
+   "args": {},
+   "variables": {
+    "caller_verified": true,
+    "verification_attempts": 0,
+    "tokens_out_est": 1234.6
+   },
+   "events": [
+    {
+     "author": "user",
+     "text": "<event>session start</event>"
+    },
+    {
+     "author": "agent",
+     "text": "Hello, thank you for calling.",
+     "timestamp": 1800000000
+    },
+    {
+     "author": "user",
+     "text": "<context>agent speaking was interrupted. user only heard 'Hello, thank you' in the last agent response.</context> I want to check my order.",
+     "timestamp": 1800000030
+    },
+    {
+     "author": "agent",
+     "text": "Sure. What is the order number?",
+     "timestamp": 1800000040
+    },
+    {
+     "author": "user",
+     "text": "It is 102 and my card is 4111 1111 1111 1111.",
+     "timestamp": 1800000100
+    }
+   ],
+   "session_id": "sess-123",
+   "agent_name": "Root agent",
+   "name": "variable tokens_out_est is sent as Est_Model_Output_Tokens__c (rounded whole number)",
+   "responses": [
+    {
+     "when": "connector://",
+     "status": 204,
+     "json": {}
+    }
+   ],
+   "expect": {
+    "ok": true
+   },
+   "calls_must_contain": [
+    "\"Est_Model_Output_Tokens__c\": 1235"
+   ],
+   "transport": "connector",
+   "connector_tool": "query_salesforce_save_transcript"
+  },
+  {
+   "tool": "save_transcript",
+   "args": {},
+   "variables": {
+    "caller_verified": true,
+    "verification_attempts": 0,
+    "tokens_out_est": 0
+   },
+   "events": [
+    {
+     "author": "user",
+     "text": "<event>session start</event>"
+    },
+    {
+     "author": "agent",
+     "text": "Hello, thank you for calling.",
+     "timestamp": 1800000000
+    },
+    {
+     "author": "user",
+     "text": "<context>agent speaking was interrupted. user only heard 'Hello, thank you' in the last agent response.</context> I want to check my order.",
+     "timestamp": 1800000030
+    },
+    {
+     "author": "agent",
+     "text": "Sure. What is the order number?",
+     "timestamp": 1800000040
+    },
+    {
+     "author": "user",
+     "text": "It is 102 and my card is 4111 1111 1111 1111.",
+     "timestamp": 1800000100
+    }
+   ],
+   "session_id": "sess-123",
+   "agent_name": "Root agent",
+   "name": "zero variable tokens_out_est is sent as 0",
+   "responses": [
+    {
+     "when": "connector://",
+     "status": 204,
+     "json": {}
+    }
+   ],
+   "expect": {
+    "ok": true
+   },
+   "calls_must_contain": [
+    "\"Est_Model_Output_Tokens__c\": 0"
+   ],
+   "transport": "connector",
+   "connector_tool": "query_salesforce_save_transcript"
+  },
+  {
+   "tool": "save_transcript",
+   "args": {},
+   "variables": {
+    "caller_verified": true,
+    "verification_attempts": 0,
+    "tts_in_est": 1234.6
+   },
+   "events": [
+    {
+     "author": "user",
+     "text": "<event>session start</event>"
+    },
+    {
+     "author": "agent",
+     "text": "Hello, thank you for calling.",
+     "timestamp": 1800000000
+    },
+    {
+     "author": "user",
+     "text": "<context>agent speaking was interrupted. user only heard 'Hello, thank you' in the last agent response.</context> I want to check my order.",
+     "timestamp": 1800000030
+    },
+    {
+     "author": "agent",
+     "text": "Sure. What is the order number?",
+     "timestamp": 1800000040
+    },
+    {
+     "author": "user",
+     "text": "It is 102 and my card is 4111 1111 1111 1111.",
+     "timestamp": 1800000100
+    }
+   ],
+   "session_id": "sess-123",
+   "agent_name": "Root agent",
+   "name": "variable tts_in_est is sent as Est_Voice_Input_Tokens__c (rounded whole number)",
+   "responses": [
+    {
+     "when": "connector://",
+     "status": 204,
+     "json": {}
+    }
+   ],
+   "expect": {
+    "ok": true
+   },
+   "calls_must_contain": [
+    "\"Est_Voice_Input_Tokens__c\": 1235"
+   ],
+   "transport": "connector",
+   "connector_tool": "query_salesforce_save_transcript"
+  },
+  {
+   "tool": "save_transcript",
+   "args": {},
+   "variables": {
+    "caller_verified": true,
+    "verification_attempts": 0,
+    "tts_in_est": 0
+   },
+   "events": [
+    {
+     "author": "user",
+     "text": "<event>session start</event>"
+    },
+    {
+     "author": "agent",
+     "text": "Hello, thank you for calling.",
+     "timestamp": 1800000000
+    },
+    {
+     "author": "user",
+     "text": "<context>agent speaking was interrupted. user only heard 'Hello, thank you' in the last agent response.</context> I want to check my order.",
+     "timestamp": 1800000030
+    },
+    {
+     "author": "agent",
+     "text": "Sure. What is the order number?",
+     "timestamp": 1800000040
+    },
+    {
+     "author": "user",
+     "text": "It is 102 and my card is 4111 1111 1111 1111.",
+     "timestamp": 1800000100
+    }
+   ],
+   "session_id": "sess-123",
+   "agent_name": "Root agent",
+   "name": "zero variable tts_in_est is sent as 0",
+   "responses": [
+    {
+     "when": "connector://",
+     "status": 204,
+     "json": {}
+    }
+   ],
+   "expect": {
+    "ok": true
+   },
+   "calls_must_contain": [
+    "\"Est_Voice_Input_Tokens__c\": 0"
+   ],
+   "transport": "connector",
+   "connector_tool": "query_salesforce_save_transcript"
+  },
+  {
+   "tool": "save_transcript",
+   "args": {},
+   "variables": {
+    "caller_verified": true,
+    "verification_attempts": 0,
+    "tts_out_est": 1234.6
+   },
+   "events": [
+    {
+     "author": "user",
+     "text": "<event>session start</event>"
+    },
+    {
+     "author": "agent",
+     "text": "Hello, thank you for calling.",
+     "timestamp": 1800000000
+    },
+    {
+     "author": "user",
+     "text": "<context>agent speaking was interrupted. user only heard 'Hello, thank you' in the last agent response.</context> I want to check my order.",
+     "timestamp": 1800000030
+    },
+    {
+     "author": "agent",
+     "text": "Sure. What is the order number?",
+     "timestamp": 1800000040
+    },
+    {
+     "author": "user",
+     "text": "It is 102 and my card is 4111 1111 1111 1111.",
+     "timestamp": 1800000100
+    }
+   ],
+   "session_id": "sess-123",
+   "agent_name": "Root agent",
+   "name": "variable tts_out_est is sent as Est_Voice_Output_Tokens__c (rounded whole number)",
+   "responses": [
+    {
+     "when": "connector://",
+     "status": 204,
+     "json": {}
+    }
+   ],
+   "expect": {
+    "ok": true
+   },
+   "calls_must_contain": [
+    "\"Est_Voice_Output_Tokens__c\": 1235"
+   ],
+   "transport": "connector",
+   "connector_tool": "query_salesforce_save_transcript"
+  },
+  {
+   "tool": "save_transcript",
+   "args": {},
+   "variables": {
+    "caller_verified": true,
+    "verification_attempts": 0,
+    "tts_out_est": 0
+   },
+   "events": [
+    {
+     "author": "user",
+     "text": "<event>session start</event>"
+    },
+    {
+     "author": "agent",
+     "text": "Hello, thank you for calling.",
+     "timestamp": 1800000000
+    },
+    {
+     "author": "user",
+     "text": "<context>agent speaking was interrupted. user only heard 'Hello, thank you' in the last agent response.</context> I want to check my order.",
+     "timestamp": 1800000030
+    },
+    {
+     "author": "agent",
+     "text": "Sure. What is the order number?",
+     "timestamp": 1800000040
+    },
+    {
+     "author": "user",
+     "text": "It is 102 and my card is 4111 1111 1111 1111.",
+     "timestamp": 1800000100
+    }
+   ],
+   "session_id": "sess-123",
+   "agent_name": "Root agent",
+   "name": "zero variable tts_out_est is sent as 0",
+   "responses": [
+    {
+     "when": "connector://",
+     "status": 204,
+     "json": {}
+    }
+   ],
+   "expect": {
+    "ok": true
+   },
+   "calls_must_contain": [
+    "\"Est_Voice_Output_Tokens__c\": 0"
+   ],
+   "transport": "connector",
+   "connector_tool": "query_salesforce_save_transcript"
+  },
+  {
+   "tool": "save_transcript",
+   "args": {},
+   "variables": {
+    "caller_verified": true,
+    "verification_attempts": 0,
+    "tokens_total_est": 1234.6
+   },
+   "events": [
+    {
+     "author": "user",
+     "text": "<event>session start</event>"
+    },
+    {
+     "author": "agent",
+     "text": "Hello, thank you for calling.",
+     "timestamp": 1800000000
+    },
+    {
+     "author": "user",
+     "text": "<context>agent speaking was interrupted. user only heard 'Hello, thank you' in the last agent response.</context> I want to check my order.",
+     "timestamp": 1800000030
+    },
+    {
+     "author": "agent",
+     "text": "Sure. What is the order number?",
+     "timestamp": 1800000040
+    },
+    {
+     "author": "user",
+     "text": "It is 102 and my card is 4111 1111 1111 1111.",
+     "timestamp": 1800000100
+    }
+   ],
+   "session_id": "sess-123",
+   "agent_name": "Root agent",
+   "name": "variable tokens_total_est is sent as Est_Total_Tokens__c (rounded whole number)",
+   "responses": [
+    {
+     "when": "connector://",
+     "status": 204,
+     "json": {}
+    }
+   ],
+   "expect": {
+    "ok": true
+   },
+   "calls_must_contain": [
+    "\"Est_Total_Tokens__c\": 1235"
+   ],
+   "transport": "connector",
+   "connector_tool": "query_salesforce_save_transcript"
+  },
+  {
+   "tool": "save_transcript",
+   "args": {},
+   "variables": {
+    "caller_verified": true,
+    "verification_attempts": 0,
+    "tokens_total_est": 0
+   },
+   "events": [
+    {
+     "author": "user",
+     "text": "<event>session start</event>"
+    },
+    {
+     "author": "agent",
+     "text": "Hello, thank you for calling.",
+     "timestamp": 1800000000
+    },
+    {
+     "author": "user",
+     "text": "<context>agent speaking was interrupted. user only heard 'Hello, thank you' in the last agent response.</context> I want to check my order.",
+     "timestamp": 1800000030
+    },
+    {
+     "author": "agent",
+     "text": "Sure. What is the order number?",
+     "timestamp": 1800000040
+    },
+    {
+     "author": "user",
+     "text": "It is 102 and my card is 4111 1111 1111 1111.",
+     "timestamp": 1800000100
+    }
+   ],
+   "session_id": "sess-123",
+   "agent_name": "Root agent",
+   "name": "zero variable tokens_total_est is sent as 0",
+   "responses": [
+    {
+     "when": "connector://",
+     "status": 204,
+     "json": {}
+    }
+   ],
+   "expect": {
+    "ok": true
+   },
+   "calls_must_contain": [
+    "\"Est_Total_Tokens__c\": 0"
+   ],
+   "transport": "connector",
+   "connector_tool": "query_salesforce_save_transcript"
+  },
+  {
+   "tool": "save_transcript",
    "args": {
     "outcome": "escalated"
    },

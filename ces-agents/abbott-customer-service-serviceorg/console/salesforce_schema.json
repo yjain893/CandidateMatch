@@ -211,6 +211,26 @@
                   },
                   "Has_Human_Agent__c": {
                     "type": "boolean"
+                  },
+                  "Est_Model_Input_Tokens__c": {
+                    "type": "number",
+                    "description": "Estimated tokens (not Google's exact count)"
+                  },
+                  "Est_Model_Output_Tokens__c": {
+                    "type": "number",
+                    "description": "Estimated tokens (not Google's exact count)"
+                  },
+                  "Est_Voice_Input_Tokens__c": {
+                    "type": "number",
+                    "description": "Estimated tokens (not Google's exact count)"
+                  },
+                  "Est_Voice_Output_Tokens__c": {
+                    "type": "number",
+                    "description": "Estimated tokens (not Google's exact count)"
+                  },
+                  "Est_Total_Tokens__c": {
+                    "type": "number",
+                    "description": "Estimated tokens (not Google's exact count)"
                   }
                 },
                 "additionalProperties": false

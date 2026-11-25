@@ -171,6 +171,31 @@
             {
               "name": "Has_Human_Agent__c",
               "type": "boolean"
+            },
+            {
+              "name": "Est_Model_Input_Tokens__c",
+              "type": "number",
+              "description": "Estimated tokens (not Google's exact count)"
+            },
+            {
+              "name": "Est_Model_Output_Tokens__c",
+              "type": "number",
+              "description": "Estimated tokens (not Google's exact count)"
+            },
+            {
+              "name": "Est_Voice_Input_Tokens__c",
+              "type": "number",
+              "description": "Estimated tokens (not Google's exact count)"
+            },
+            {
+              "name": "Est_Voice_Output_Tokens__c",
+              "type": "number",
+              "description": "Estimated tokens (not Google's exact count)"
+            },
+            {
+              "name": "Est_Total_Tokens__c",
+              "type": "number",
+              "description": "Estimated tokens (not Google's exact count)"
             }
           ]
         }
@@ -309,6 +334,13 @@
         "links": {},
         "fixed_values": {
           "Conversation_Status__c": "Closed"
+        },
+        "variable_fields": {
+          "tokens_in_est": "Est_Model_Input_Tokens__c",
+          "tokens_out_est": "Est_Model_Output_Tokens__c",
+          "tts_in_est": "Est_Voice_Input_Tokens__c",
+          "tts_out_est": "Est_Voice_Output_Tokens__c",
+          "tokens_total_est": "Est_Total_Tokens__c"
         }
       }
     }
@@ -362,9 +394,21 @@
             "params": {
               "text": "Are you still there?"
             }
+          },
+          {
+            "template": "token_count_input",
+            "params": {
+              "debug": true
+            }
           }
         ],
         "afterModel": [
+          {
+            "template": "token_count_output",
+            "params": {
+              "debug": true
+            }
+          },
           {
             "template": "save_transcript_on_end",
             "params": {
