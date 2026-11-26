@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Actual_Total_Tokens__c</fullName>
+    <label>Actual Total Tokens</label>
+    <description>Model input + output + thought + voice input + voice output. Does not include the guardrail model: Google does not report its tokens.</description>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Token Log Config</label>
+    <pluralLabel>Token Log Configs</pluralLabel>
+    <description>Settings for reading real token counts from Google Cloud Logging. One record named Default. The value is created in the org, not stored in the repo.</description>
+    <visibility>Public</visibility>
+</CustomObject>

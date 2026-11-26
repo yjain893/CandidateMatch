@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Voice Agent Apex Access</label>
+    <description>For the voice agent's API-only integration user: may call the VoiceAgentApi endpoint, which looks up contacts and orders and changes shipping addresses for it.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <classAccesses><apexClass>VoiceAgentApi</apexClass><enabled>true</enabled></classAccesses>
+    <userPermissions><enabled>true</enabled><name>ApiEnabled</name></userPermissions>
+</PermissionSet>

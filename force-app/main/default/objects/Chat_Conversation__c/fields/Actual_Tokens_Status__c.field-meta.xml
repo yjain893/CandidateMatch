@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Actual_Tokens_Status__c</fullName>
+    <label>Actual Tokens Status</label>
+    <description>Empty = not looked up yet. Done = real counts saved. No log entries / No token counts found / Partial / Error: ... = what happened on the last lookup.</description>
+    <length>255</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
