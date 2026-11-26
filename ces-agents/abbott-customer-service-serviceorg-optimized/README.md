@@ -20,7 +20,7 @@ Everything the agent says (greeting, verification question, order status sentenc
 - `import-ready/Abbott_Customer_Service_ServiceOrg_Optimized.zip`: **the one to import.** The consumer key and the secret version path are filled in from your current import-ready package. This folder is excluded from git. It holds no secret (only the key and the secret's version path).
 
 ## Import the optimized agent
-1. Salesforce first (so transcripts can be labelled): deploy the field `Voice_Agent_Name__c` and the updated permission set `Voice_Agent_Chat_Conversation_Writer` (see the dashboard notes in the main report).
+1. Salesforce first (so transcripts can be labelled): deploy the field `Voice_Agent_Name__c` and the permission set `Voice_Agent_Access`.
 2. CX Agent Studio: import `import-ready/Abbott_Customer_Service_ServiceOrg_Optimized.zip` as a new app (same project, same secret in Secret Manager).
 3. In the new app turn on **Cloud Logging** (App settings, Logging) so the real token counts exist. Set the Preview default of `telephony-caller-id` to the same test number as the baseline.
 4. Try one Preview call. A new transcript appears; about 2 minutes later its token fields fill in, and `Voice_Agent_Name__c` says `Optimized`.

@@ -1,8 +1,8 @@
 // Runs TokenActualsQueueable on a schedule.
 // Start it once (Execute Anonymous):  TokenActualsScheduler.scheduleEvery15Minutes();
 // Stop it:  TokenActualsScheduler.unschedule();
-// The user who schedules it runs the jobs, so that user needs the permission set "Google Logging Access"
-// (it gives access to the Google login) and the permission set "Token Actuals Access".
+// The user who schedules it runs the jobs, so that user needs the permission set "Voice_Agent_Access"
+// (it gives access to the Google login and to these classes).
 public with sharing class TokenActualsScheduler implements Schedulable {
 
     static final List<String> MINUTES = new List<String>{ '0', '15', '30', '45' };

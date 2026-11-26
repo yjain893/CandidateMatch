@@ -99,13 +99,10 @@ Is it needed? Not for access (the admin user can read everything anyway). It is 
 
 | Permission | Who needs it | What it allows |
 |---|---|---|
-| `Voice_Agent_Chat_Conversation_Writer` | the Run As user | create / update transcripts |
-| `Voice_Agent_Apex_Access` | the integration user (idle) | call `VoiceAgentApi` |
-| `Google Logging Access` (made in the UI) | the user who saves the transcript | use the Google login (External Credential principal) |
-| `Token_Actuals_Access` (in the repo) | the same user | write the new fields, run the token classes |
-| Case field access + class access to `CaseFromTranscript*` (inside `Voice_Agent_Chat_Conversation_Writer`) | the Run As user | set `Case.Category__c` and `Case.Chat_Conversation__c`, run the Case classes (no Case object permission is given to the integration license) |
-| access to the prompt template and Agentforce | the user the jobs run as | the Case prompt runs as the user who saved the transcript; the Chat Analytics classes run in system mode (`without sharing`) |
+| **`Voice_Agent_Access`** (one set, in the repo; merged on 26 Nov from five older sets) | the Run As user (the user who saves the transcripts), the idle integration user if kept, and everyone who opens the dashboard | create / update transcripts; set the Case fields; run the Case classes, `VoiceAgentApi`, the three token classes and the dashboard class; use the Google login (External Credential principal `Google_Logging-Reader`); write the `Actual_*` token fields and `Voice_Agent_Name__c`; read the dashboard numbers; API access |
 | Logs Viewer (Google IAM, on the project) | the Google service account | read logs, nothing else |
+
+The five older sets (Voice Agent Chat Conversation Writer, Voice Agent Apex Access, Google Logging Access, Token Actuals Access, Token Comparison Access) were deleted. One set means everyone who opens the dashboard can also edit transcripts and use the Google login: fine for a demo, split a read-only viewer set out again before real users.
 
 ## A4. Where each secret lives
 
@@ -122,7 +119,7 @@ Is it needed? Not for access (the admin user can read everything anyway). It is 
 - **Salesforce code, Cases:** `ChatConversationCaseTrigger`, `CaseFromTranscriptQueueable`, `CaseFromTranscript` (+ tests), prompt template `Create_Case_From_Transcript`, fields `Case.Chat_Conversation__c` and `Case.Category__c`; extra: `CaseTranscriptsForPrompt` and a Draft version of the template `Summarise_Case_All_Components`.
 - **Salesforce code, Chat Analytics (pre-existing, not in the repo):** `ChatAnalyticsScheduler`, `ChatAnalyticsOrchestrator`, `ChatAnalyticsQueueable`, `ChatAnalyticsInvocationQueueable`, `ChatAnalyticsService`, `ChatAnalyticsAgentInvoker` (+ interface `ChatAnalyticsAgentProvider`), `GetChatConversationContextAction`, `ChatTranscriptBuilder`, `ChatConversationRefreshQueueable`, `ChatAnalyticsDashboardController`, the LWC `chatAnalyticsDashboard` (in the repo), the scheduled job `ChatAnalyticsSchedulerDaily`, the Agentforce agent "Chat Analytics Agent".
 - **Salesforce data:** `Chat_Conversation__c` (plus the new `Actual_*` fields and `Voice_Agent_Name__c`), `Case`, `Chat_Analytics__c`.
-- **Comparison:** `TokenComparisonController` (+ test), the component `tokenComparisonDashboard` embedded in `chatAnalyticsDashboard`, the permission set `Token_Comparison_Access`.
+- **Comparison:** `TokenComparisonController` (+ test), the component `tokenComparisonDashboard` embedded in `chatAnalyticsDashboard`, the permission set `Voice_Agent_Access`.
 
 ---------------------------------------------------------------------------------------------------
 
@@ -197,7 +194,7 @@ Two more branches start from the same Closed transcript:
    Then, on the saved credential, **JWT Claims, Edit, add a body claim named `scope`** with the same scope value. **Without it Google answers `invalid_scope`** (the Scope field above is sent a different way, which Google ignores for this grant). The generated claims also include `exp`, `iat`, `nbf`, `alg`, `typ`, and `kid`, a JWT **header** claim equal to the certificate's unique name (left as generated; it worked).
 3. **Principal** (on the External Credential, Principals, New): parameter name `Reader`, sequence 1, identity type **Named Principal**.
 4. **Named Credential** (Named Credentials tab, New): label `Google Logging API`, name `Google_Logging_API`, URL `https://logging.googleapis.com`, External Credential `Google Logging`, Enabled for Callouts on, **Generate Authorization Header** ticked, client certificate empty, formulas off, network connection none.
-5. **Permission set `Google Logging Access`** (made in the UI, not in the repo): External Credential Principal Access = `Google Logging - Reader` enabled; assigned to every user who may run lookups.
+5. **Permission:** the External Credential Principal Access `Google Logging - Reader` is part of the permission set `Voice_Agent_Access`; assign that set to every user who may run lookups.
 6. **How the login works at run time:** Salesforce builds the JWT with the claims, signs it with the private key, posts it to the Google token address, Google verifies the signature against the uploaded public key and returns an access token (about 1 hour); Salesforce sends it as `Authorization: Bearer` on the call to `logging.googleapis.com`.
 7. **Test that proved it** (Execute Anonymous, read-only): a callout to `callout:Google_Logging_API/v2/entries:list` returned status 200 and a body containing `input token count`.
 
@@ -208,9 +205,9 @@ Two more branches start from the same Closed transcript:
 - **`TokenActualsQueueable`** (`Database.AllowsCallouts`): selects `Conversation_Identifier__c != null`, created at least 1 minute and at most 7 days ago, status empty, or (status `No log entries` or `Error%`, checked more than 15 minutes ago, created within 3 hours); oldest first, up to 25; stops starting new lookups after 60 s (leftover records stay untouched and the job re-queues itself in 1 minute); all callouts first, one `update` at the end.
 - **`TokenActualsTrigger`** (`Chat_Conversation__c`, after insert and after update): when a record is (or becomes) `Conversation_Status__c = 'Closed'`, enqueue `TokenActualsQueueable` with a 2-minute delay (not from queueable / future / batch context). Open calls queue nothing; later edits queue nothing more.
 - **`TokenActualsScheduler`** (optional, off): `TokenActualsScheduler.scheduleEvery15Minutes();` creates 4 jobs (minutes 0, 15, 30, 45); `TokenActualsScheduler.unschedule();` stops them.
-- **Permission set `Token_Actuals_Access`:** read/edit on the new fields, class access to the three classes, object Edit/Read on `Chat_Conversation__c`. It does not list `Conversation_Identifier__c` (a required field cannot carry field permissions).
+- **Permission set `Voice_Agent_Access`** (merged from five): read/edit on the token fields and `Voice_Agent_Name__c`, class access to all seven classes, object access on `Chat_Conversation__c`, the Google principal and API access. It does not list `Conversation_Identifier__c` (a required field cannot carry field permissions). Its description must stay under 255 characters.
 - **Tests:** `TokenActualsServiceTest` (13 tests: sums over pages, duplicates, nested spans, text and decimal numbers, empty answer, no counts, Done/Partial status, page cap, Google errors, invalid session ids, missing config, queue picks only old-enough records, errors recorded, out-of-time budget, trigger once, scheduler start/stop). Tests that touch the new fields run as a test user holding `Token_Actuals_Access`.
-- **Not touched on purpose:** `Voice_Agent_Chat_Conversation_Writer`, `ChatConversationCaseTrigger` and the Case classes (another workstream), the voice agent itself.
+- **Not touched on purpose:** `ChatConversationCaseTrigger` and the Case classes (another workstream), the voice agent itself.
 
 ## B6b. Case creation from a transcript (built in the Cases workstream; details in `docs/cases-from-transcripts-decisions.md`)
 - **Trigger** `ChatConversationCaseTrigger` (after insert, after update on `Chat_Conversation__c`): picks rows with `Conversation_Status__c = 'Closed'` and a non-blank `Transcript__c`; on update only when the row just became qualifying; skipped in queueable / future / batch context; enqueues `CaseFromTranscriptQueueable`.
@@ -242,16 +239,16 @@ Two more branches start from the same Closed transcript:
   - `finalize_package.py` sets `enableCloudLogging: true`, the Preview default of `telephony-caller-id` (a fictional test number) and sorts variables and tools like a console export, so the zip equals an export. Verified: `app.json` of both zips is identical to the user's exports apart from internal ids; only the YAML line wrapping of the connector schema differs.
   - **A tool's description is taken from the docstring of its Python code, not from the description field of the tool JSON.** `optimize_descriptions.py` therefore rewrites both. Our first package changed only the JSON, and an export showed the old lengths.
   - Importing the generated zip into the console repeated a "network error" for the user (cause not found; the layout equals the earlier zip). The proven route is to copy the working app and paste `console/` files.
-- **Field** `Chat_Conversation__c.Voice_Agent_Name__c` (Text 80). Written by the agent's save tool, so it is in the permission set `Voice_Agent_Chat_Conversation_Writer`.
+- **Field** `Chat_Conversation__c.Voice_Agent_Name__c` (Text 80). Written by the agent's save tool, so it is in the permission set `Voice_Agent_Access`.
 - **`TokenComparisonController.load(agent, maxBars)`** (`with sharing`, `USER_MODE`): returns the latest N calls whose `Actual_Tokens_Status__c = 'Done'` (oldest first), the per-agent averages over all calls (grouped by `Voice_Agent_Name__c`, empty = `Unlabelled`) and `percentFewer` = (Baseline average - Optimized average) / Baseline average when both exist. The agent filter value is bound, never concatenated. Tests run as a user holding the three permission sets.
 - **Component** `tokenComparisonDashboard`: a plain section (no extra card) with a bar chart made of HTML and CSS (an earlier SVG version scaled to the full page width and looked far too big), filters (agent, latest 10/30/60/100 calls, total or breakdown), KPI-style tiles and the percent box. It is placed at the bottom of `chatAnalyticsDashboard`. An earlier separate tab `Token_Comparison` was deleted from the org.
-- **Permission set** `Token_Comparison_Access`: read-only on `Chat_Conversation__c`, the `Actual_*` fields and `Voice_Agent_Name__c`, and class access to the controller. Whoever opens the dashboard needs it, otherwise only the new section shows an error.
+- **Permission:** whoever opens the dashboard needs `Voice_Agent_Access` (it holds class access to the controller and read access to the numbers), otherwise only the new section shows an error.
 
 ## B7. Deploy order that worked (serviceOrg, all with the user's approval)
 1. Check-only deploy of the fields and the custom metadata type, then real deploy (no tests).
 2. Check-only deploy of the classes, tests and permission set, then real deploy with `--test-level RunSpecifiedTests --tests TokenActualsServiceTest`.
 3. After each code change: check-only again (the Cases tests `CaseFromTranscriptTest` and `CaseFromTranscriptQueueableTest` are included when the trigger is involved), ask, then deploy.
-4. In the org (by hand): the certificate, External Credential, principal, Named Credential, permission set `Google Logging Access`, the `Token_Log_Config__mdt` record `Default`, assign `Token Actuals Access`.
+4. In the org (by hand): the certificate, External Credential, principal, Named Credential, the `Token_Log_Config__mdt` record `Default`, assign the permission set `Voice_Agent_Access`.
 
 ## B8. Verified results
 - 5 saved calls with real numbers; a hand check of one session: all five sums equal Google's own entries (5 entries, 8 model calls, 5 voice runs).
@@ -319,7 +316,7 @@ Two more branches start from the same Closed transcript:
 
 ## B12. Operations and hardening checklist
 - **Certificate expiry: 2027-11-26** (read back from the org: a self-signed certificate lasts one year; key size 2048; private key not exportable). Set a reminder a month earlier; before it expires create a new certificate, upload its public half to the service account (Keys), select it as the signing certificate in the External Credential. If it lapses, lookups fail with a JWT error and records show `Error: ...`.
-- **Changing the Run As user:** the new user needs `Google Logging Access` and `Token Actuals Access` (and the voice agent permission sets), or lookups show `Error` until the optional schedule (run as a user who has them) fixes them.
+- **Changing the Run As user:** the new user needs the permission set `Voice_Agent_Access`, or lookups show `Error` until the optional schedule (run as a user who has them) fixes them.
 - **Rotate secrets** that were ever pasted anywhere: new consumer secret in Salesforce, new Secret Manager version, select it in the connector. Never put keys, the project id or the host name into tracked files.
 - **Each new client project** repeats: service account + Logs Viewer, certificate + public key upload, External Credential (with the `scope` claim) + Named Credential, permission sets, `Token_Log_Config__mdt` record. Consider scripting it.
 - **To stop the feature:** disable or delete `TokenActualsTrigger`; run `TokenActualsScheduler.unschedule();` if it was started.

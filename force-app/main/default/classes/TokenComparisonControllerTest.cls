@@ -14,7 +14,7 @@ private class TokenComparisonControllerTest {
             );
             insert runner;
             List<PermissionSetAssignment> assignments = new List<PermissionSetAssignment>();
-            for (PermissionSet ps : [SELECT Id FROM PermissionSet WHERE Name IN ('Token_Actuals_Access', 'Token_Comparison_Access', 'Voice_Agent_Chat_Conversation_Writer')]) {
+            for (PermissionSet ps : [SELECT Id FROM PermissionSet WHERE Name = 'Voice_Agent_Access']) {
                 assignments.add(new PermissionSetAssignment(AssigneeId = runner.Id, PermissionSetId = ps.Id));
             }
             insert assignments;

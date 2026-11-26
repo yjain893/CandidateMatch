@@ -226,7 +226,7 @@ private class TokenActualsServiceTest {
             insert runner;
             insert new PermissionSetAssignment(
                 AssigneeId = runner.Id,
-                PermissionSetId = [SELECT Id FROM PermissionSet WHERE Name = 'Token_Actuals_Access' LIMIT 1].Id
+                PermissionSetId = [SELECT Id FROM PermissionSet WHERE Name = 'Voice_Agent_Access' LIMIT 1].Id
             );
         }
         return runner;

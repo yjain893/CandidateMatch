@@ -127,7 +127,7 @@ private class VoiceAgentApiTest {
             if (!addOn.isEmpty()) {
                 insert new PermissionSetLicenseAssign(AssigneeId = integration.Id, PermissionSetLicenseId = addOn[0].Id);
             }
-            List<PermissionSet> sets = [SELECT Id FROM PermissionSet WHERE Name = 'Voice_Agent_Apex_Access'];
+            List<PermissionSet> sets = [SELECT Id FROM PermissionSet WHERE Name = 'Voice_Agent_Access'];
             if (!sets.isEmpty()) {
                 insert new PermissionSetAssignment(AssigneeId = integration.Id, PermissionSetId = sets[0].Id);
             }
