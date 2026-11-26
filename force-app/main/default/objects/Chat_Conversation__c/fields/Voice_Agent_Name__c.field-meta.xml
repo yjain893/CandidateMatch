@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Voice_Agent_Name__c</fullName>
+    <label>Voice Agent Name</label>
+    <description>Which voice agent made this call (for example Baseline or Optimized). Sent by the agent's save-transcript tool as a fixed label. Empty on calls made before the label existed.</description>
+    <length>80</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

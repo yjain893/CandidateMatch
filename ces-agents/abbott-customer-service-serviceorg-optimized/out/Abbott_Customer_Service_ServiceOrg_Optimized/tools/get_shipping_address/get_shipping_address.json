@@ -1,0 +1,10 @@
+{
+  "name": "2fd08a15-2df8-56ab-93d9-6f903cbacd0d",
+  "pythonFunction": {
+    "name": "get_shipping_address",
+    "pythonCode": "tools/get_shipping_address/python_function/python_code.py",
+    "description": "Gets an order's current shipping address to read out before a change. Call after verification, with the order number.\n\nArgs:\n  order_number: As the caller said it, for example \"102\".\n\nReturns:\n  dict: ok, street, city, state, postal_code, country. not_found: nothing matched. system_error true: apologize and escalate."
+  },
+  "executionType": "SYNCHRONOUS",
+  "displayName": "get_shipping_address"
+}

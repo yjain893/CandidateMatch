@@ -16,15 +16,15 @@ A voice agent built in **Google CX Agent Studio (CES)** that talks to Salesforce
 - **Never put a secret in a file or message.** The user did paste a consumer key and secret into chat on 2026-11-20 and a consumer key on 2026-11-24: **treat those as exposed and rotate them** (see section 10 item 8). The skill's rule: never ask the user to paste a key or secret; use `sf_oauth_check.py` (hidden prompts).
 - Very simple language, step by step instructions, short answers; the user explains things to non-technical colleagues.
 - **Script fidelity:** "Don't change anything from the script." No Abbott rules ("exclude D6 as well. I don't want any Abbott rules"). See 5.
-- Org aliases: `demoOrg` (Developer Edition), `serviceOrg` (sandbox; real name of the admin user is in `sf org list`). Google console region `us`. The Google project id, the connector's server/tokens and the secret names live in `ces-agents/abbott-customer-service-serviceorg/import-ready/` (git-excluded on this Mac via `.git/info/exclude`) and in the console; ask the user rather than guessing.
+- Org aliases: `demoOrg` (Developer Edition), `serviceOrg` (sandbox; real name of the admin user is in `sf org list`). Google console region `us`. The Google project id, the connector's server/tokens and the secret names live in `ces-agents/abbott-customer-service-serviceorg-baseline/import-ready/` (git-excluded on this Mac via `.git/info/exclude`) and in the console; ask the user rather than guessing.
 
 ## 3. What exists today (files and what they are)
 | Path | What |
 |---|---|
 | `ces-agents/abbott-customer-service/` | demoOrg agent: `README.md`, `design.md` (the approved design), `spec.json`, `instructions/root.txt`, `console/` (paste-ready tools, callbacks, instruction, connector schema), `out/` (importable zip, placeholders for key/project), `spike/` (callback test, no longer needed) |
-| `ces-agents/abbott-customer-service-serviceorg/` | serviceOrg agent copy: same layout; Salesforce reached through the Apex endpoint; transcript to `Chat_Conversation__c`; `import-ready/` (git-excluded; holds the project id and consumer key, never commit) |
+| `ces-agents/abbott-customer-service-serviceorg-baseline/` | serviceOrg agent copy: same layout; Salesforce reached through the Apex endpoint; transcript to `Chat_Conversation__c`; `import-ready/` (git-excluded; holds the project id and consumer key, never commit) |
 | `ces-agents/exported-from-google-console/Pharma_Order_Assistant_exported_2026-11-21/` | the user's latest console export, sanitized (key and project id replaced by placeholders). The folder was renamed from "console exports" because the name was unclear |
-| `ces-agents/learnings/Voice-Agent-Setup-and-Lessons-Learned.{html,pdf}` | learnings PDF (20 pages: GCP, connected app, errors and fixes, transcript and phone chapters) |
+| `docs/Voice-Agent-Setup-and-Lessons-Learned.{html,pdf}` | learnings PDF (20 pages: GCP, connected app, errors and fixes, transcript and phone chapters) |
 | `claude-skills/ces-agent-builder/` | repo copy of the skill (the live one is `~/.claude/skills/ces-agent-builder/`; **the repo copy is behind the live skill unless re-synced**) |
 | `force-app/main/default/classes/VoiceAgentApi*.cls` | Apex REST endpoint for serviceOrg (see 7) |
 | `force-app/main/default/permissionsets/Voice_Agent_*.permissionset-meta.xml` | permission sets (see 7) |
@@ -135,3 +135,7 @@ Live in serviceOrg: a trigger `ChatConversationCaseTrigger` on `Chat_Conversatio
 
 ## 12. Boundary note: token estimates (own session)
 Callbacks cannot read real token counts (verified); real counts exist in Cloud Logging (`LLM` and `TTS` spans, with the session id) after turning on "Enable Cloud Logging" in the app's logging settings. The chosen path: estimate in callbacks (`token_count_input`, `token_count_output`) with calibration, saved to five `Est_*_Tokens__c` fields on `Chat_Conversation__c` (deployed). Console steps are **not done**. Files: `ces-agents/token-usage-spike/`, the two callbacks under the serviceOrg agent's `console/callbacks/`, skill template and `references/token-estimates.md`.
+
+
+## Folder cleanup, 26 Nov 2026
+The folders `ces-agents/abbott-customer-service` (the older demoOrg agent), `ces-agents/exported-from-google-console` and `ces-agents/token-usage-spike` were deleted by the user's decision (superseded; they remain in git history). `ces-agents` now holds the baseline agent `abbott-customer-service-serviceorg-baseline`, the optimized copy `abbott-customer-service-serviceorg-optimized` and nothing else; the learnings document moved to `docs/Voice-Agent-Setup-and-Lessons-Learned.pdf` (updated 26 Nov with the token chapter). The baseline's estimate callbacks and `Est_*` fields were removed from its spec; it is labelled `Voice_Agent_Name__c = Baseline`. Mentions of the deleted folders in this file are historical.

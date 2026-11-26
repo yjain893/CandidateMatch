@@ -1,0 +1,10 @@
+{
+  "name": "c5b9ab6e-271e-52e2-bb4a-80ddb8861e5f",
+  "pythonFunction": {
+    "name": "update_shipping_address",
+    "pythonCode": "tools/update_shipping_address/python_function/python_code.py",
+    "description": "Changes an order's shipping address. Send only the parts the caller gave. Call after verification, with the order number and the new address.\n\nArgs:\n  order_number: As the caller said it, for example \"102\".\n  street: New street and number, as said.\n  city: Only if given.\n  state: Only if given.\n  postal_code: Only if given.\n  country: Only if given.\n\nReturns:\n  dict: ok, updated_fields. not_found, not_confirmed, invalid_input: fix and retry. system_error true: apologize and escalate."
+  },
+  "executionType": "SYNCHRONOUS",
+  "displayName": "update_shipping_address"
+}

@@ -1,0 +1,10 @@
+{
+  "name": "936fa506-4407-592f-8f7b-39578a75388e",
+  "pythonFunction": {
+    "name": "get_order_status",
+    "pythonCode": "tools/get_order_status/python_function/python_code.py",
+    "description": "Gets an order's status, dates and total. Call after verification, with the order number.\n\nArgs:\n  order_number: As the caller said it, for example \"102\".\n\nReturns:\n  dict: ok, order_status, order_date, end_date, total_amount. not_found: nothing matched. system_error true: apologize and escalate."
+  },
+  "executionType": "SYNCHRONOUS",
+  "displayName": "get_order_status"
+}

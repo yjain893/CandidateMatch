@@ -42,7 +42,7 @@ Starting rates (generic guesses, to be calibrated): `chars_per_token_in` 3.5, `c
 ## 6. What was built
 | Item | Where | State |
 |---|---|---|
-| Callbacks | `ces-agents/abbott-customer-service-serviceorg/console/callbacks/before_model_4_token_count_input.py` (LAST before-model callback), `after_model_1_token_count_output.py` (FIRST after-model callback, above save-transcript) | Written, tested offline; **NOT pasted into the console** |
+| Callbacks | `ces-agents/abbott-customer-service-serviceorg-baseline/console/callbacks/before_model_4_token_count_input.py` (LAST before-model callback), `after_model_1_token_count_output.py` (FIRST after-model callback, above save-transcript) | Written, tested offline; **NOT pasted into the console** |
 | Variables (Number, default 0) | `tokens_in_est`, `tokens_out_est`, `tts_in_est`, `tts_out_est`, `tokens_total_est`, plus Text `token_calibration` (debug log) | The user said they added the variables; callbacks not added |
 | Save tool | `console/tools/save_transcript.py` sends the five variables as `Est_*` fields; connector schema `console/salesforce_schema.json` has the five fields | Written; **not pasted into the console** (until it is, the new fields are not sent) |
 | Salesforce fields | `Chat_Conversation__c.Est_Model_Input_Tokens__c`, `Est_Model_Output_Tokens__c`, `Est_Voice_Input_Tokens__c`, `Est_Voice_Output_Tokens__c`, `Est_Total_Tokens__c` (Number 18,0) + field access in `Voice_Agent_Chat_Conversation_Writer` | **Deployed to serviceOrg** (user approved) |
@@ -115,3 +115,7 @@ It is NOT required. It is a safety net, started with `TokenActualsScheduler.sche
 5. Ask Google about speculative voice tokens.
 6. The `order_number` type error in the voice agent tools (voice agent session).
 7. For real clients: the same setup (service account, certificate, External Credential, Named Credential, `Token_Log_Config__mdt` record) has to be repeated per client Google project; consider a script. Google setup per client is small (one read-only account) but not zero.
+
+
+## Folder cleanup, 26 Nov 2026
+The folders `ces-agents/abbott-customer-service` (the older demoOrg agent), `ces-agents/exported-from-google-console` and `ces-agents/token-usage-spike` were deleted by the user's decision (superseded; they remain in git history). `ces-agents` now holds the baseline agent `abbott-customer-service-serviceorg-baseline`, the optimized copy `abbott-customer-service-serviceorg-optimized` and nothing else; the learnings document moved to `docs/Voice-Agent-Setup-and-Lessons-Learned.pdf` (updated 26 Nov with the token chapter). The baseline's estimate callbacks and `Est_*` fields were removed from its spec; it is labelled `Voice_Agent_Name__c = Baseline`. Mentions of the deleted folders in this file are historical.

@@ -1,0 +1,10 @@
+{
+  "name": "bb307494-c2bb-5178-8a86-38c945b0b2a8",
+  "pythonFunction": {
+    "name": "verify_caller_email",
+    "pythonCode": "tools/verify_caller_email/python_function/python_code.py",
+    "description": "Checks the email the caller says against the email on their Salesforce contact. Call once they have said it. Share nothing about orders unless verified is true.\n\nArgs:\n  email: Exactly as said, including spoken \"at\" and \"dot\".\n\nReturns:\n  dict: verified (true or false), message. not_verified: say it could not be verified and ask for another (see attempts_remaining). locked_out: end the call politely. invalid_input: ask them to say it again."
+  },
+  "executionType": "SYNCHRONOUS",
+  "displayName": "verify_caller_email"
+}

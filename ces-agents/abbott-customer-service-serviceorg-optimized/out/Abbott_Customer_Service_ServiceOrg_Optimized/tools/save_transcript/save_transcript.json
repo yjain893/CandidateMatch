@@ -1,0 +1,10 @@
+{
+  "name": "cdca57f8-c2dd-5802-9413-507ac19b190f",
+  "pythonFunction": {
+    "name": "save_transcript",
+    "pythonCode": "tools/save_transcript/python_function/python_code.py",
+    "description": "Runs automatically at call end. Do not call it.\n\nArgs:\n  outcome: Filled in by the end-of-call hook. Leave empty.\n\nReturns:\n  dict: ok, message. system_error true: not saved."
+  },
+  "executionType": "SYNCHRONOUS",
+  "displayName": "save_transcript"
+}

@@ -1,0 +1,79 @@
+<template>
+  <section class="wrap">
+    <h2>Token Comparison</h2>
+    <div class="subtitle">Real tokens per voice call (from Google's logs), by voice agent. Only calls whose numbers are saved are shown.</div>
+
+    <div class="filters">
+      <lightning-combobox name="agent" label="Voice agent" value={agent} options={agentOptions} onchange={handleAgent}></lightning-combobox>
+      <lightning-combobox name="maxBars" label="Latest calls" value={maxBars} options={countOptions} onchange={handleCount}></lightning-combobox>
+      <lightning-combobox name="view" label="Bars show" value={view} options={viewOptions} onchange={handleView}></lightning-combobox>
+      <lightning-button-icon icon-name="utility:refresh" alternative-text="Refresh" title="Refresh" onclick={handleRefresh}></lightning-button-icon>
+    </div>
+
+    <template if:true={error}>
+      <div class="slds-text-color_error err">{errorMessage}</div>
+    </template>
+
+    <template if:true={hasSummaries}>
+      <div class="kpis">
+        <template for:each={summaryTiles} for:item="tile">
+          <div key={tile.agent} class="kpi">
+            <span><span class="dot" style={tile.dotStyle}></span>{tile.agent} &middot; avg tokens per call</span>
+            <strong>{tile.avgTotal}</strong><small>{tile.calls} calls</small>
+            <em>in {tile.avgModelInput} &middot; out {tile.avgModelOutput} &middot; thought {tile.avgModelThought} &middot; voice {tile.avgVoice}</em>
+          </div>
+        </template>
+        <template if:true={hasComparison}>
+          <div class="kpi highlight">
+            <span>Optimized vs Baseline</span>
+            <strong>{comparisonText}</strong><small>tokens per call</small>
+          </div>
+        </template>
+      </div>
+    </template>
+
+    <template if:true={hasBars}>
+      <div class="legend">
+        <template for:each={legend} for:item="item">
+          <span key={item.label} class="legend-item"><span class="dot" style={item.style}></span>{item.label}</span>
+        </template>
+      </div>
+      <div class="plot">
+        <div class="yaxis">
+          <template for:each={ticks} for:item="t">
+            <span key={t.key} style={t.style}>{t.label}</span>
+          </template>
+        </div>
+        <div class="area">
+          <template for:each={ticks} for:item="t">
+            <div key={t.key} class="gridline" style={t.lineStyle}></div>
+          </template>
+          <div class="cols">
+            <template for:each={bars} for:item="bar">
+              <div key={bar.key} class="col" title={bar.tip}>
+                <div class="stack" style={bar.stackStyle}>
+                  <template for:each={bar.segments} for:item="seg">
+                    <div key={seg.key} style={seg.style}></div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+      <div class="plot">
+        <div class="yaxis spacer"></div>
+        <div class="labels">
+          <template for:each={bars} for:item="bar">
+            <div key={bar.key} class="lab" title={bar.tip}><span>{bar.label}</span></div>
+          </template>
+        </div>
+      </div>
+      <div class="hint">Hover a bar to see its numbers. The latest calls are shown, oldest on the left.</div>
+    </template>
+
+    <template if:false={hasBars}>
+      <div class="empty">No calls with saved token numbers match this filter yet.</div>
+    </template>
+  </section>
+</template>

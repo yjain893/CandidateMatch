@@ -1,0 +1,10 @@
+{
+  "name": "26b94ec1-5419-5f04-9509-bda47c1855f4",
+  "pythonFunction": {
+    "name": "identify_caller",
+    "pythonCode": "tools/identify_caller/python_function/python_code.py",
+    "description": "Runs automatically at call start to recognise the caller by phone. Do not call it.\n\nArgs:\n  include_details: Internal. Leave empty.\n\nReturns:\n  dict: ok, caller_status (known or unknown), first_name. system_error true: caller is treated as unknown."
+  },
+  "executionType": "SYNCHRONOUS",
+  "displayName": "identify_caller"
+}

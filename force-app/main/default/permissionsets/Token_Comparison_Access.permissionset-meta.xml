@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Token Comparison Access</label>
+    <description>For people who open the Token Comparison dashboard (tokens per call, by voice agent). Read-only.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <objectPermissions><allowCreate>false</allowCreate><allowDelete>false</allowDelete><allowEdit>false</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Chat_Conversation__c</object><viewAllRecords>true</viewAllRecords></objectPermissions>
+    <fieldPermissions><editable>false</editable><field>Chat_Conversation__c.Voice_Agent_Name__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>Chat_Conversation__c.Actual_Model_Input_Tokens__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>Chat_Conversation__c.Actual_Model_Output_Tokens__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>Chat_Conversation__c.Actual_Model_Thought_Tokens__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>Chat_Conversation__c.Actual_Voice_Input_Tokens__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>Chat_Conversation__c.Actual_Voice_Output_Tokens__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>Chat_Conversation__c.Actual_Total_Tokens__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>Chat_Conversation__c.Actual_Tokens_Status__c</field><readable>true</readable></fieldPermissions>
+    <classAccesses><apexClass>TokenComparisonController</apexClass><enabled>true</enabled></classAccesses>
+</PermissionSet>

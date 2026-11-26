@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Voice Agent on Google CX Agent Studio and Salesforce: Setup and Lessons Learned</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm 16mm;
+    @bottom-left { content: "Voice agent on Google CX Agent Studio and Salesforce: setup and lessons learned"; font: 8pt -apple-system, "Helvetica Neue", Arial, sans-serif; color: #7a869a; }
+    @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8pt -apple-system, "Helvetica Neue", Arial, sans-serif; color: #7a869a; } }
+  @page :first { margin: 0; @bottom-left { content: none; } @bottom-right { content: none; } }
+  :root { --ink:#172b4d; --muted:#5e6c84; --line:#dfe1e6; --brand:#0b3d91; --brand2:#00875a; --soft:#f4f7fb; --warn:#ff991f; --bad:#de350b; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font: 10pt/1.5 -apple-system, "Helvetica Neue", Arial, sans-serif; color: var(--ink); margin: 0; }
+  h1 { font-size: 21pt; color: var(--brand); margin: 0 0 4mm; padding-bottom: 2mm; border-bottom: 2.5px solid var(--brand); break-before: page; break-after: avoid; }
+  h1.first, h1.flow { break-before: auto; } h1.flow { margin-top: 9mm; }
+  table.keep { break-inside: avoid; }
+  h2 { font-size: 13.5pt; color: var(--brand); margin: 7mm 0 2mm; break-after: avoid; }
+  h3 { font-size: 11pt; margin: 5mm 0 1.5mm; break-after: avoid; }
+  p { margin: 0 0 2.5mm; }
+  ul, ol { margin: 0 0 3mm 5mm; padding-left: 4mm; } li { margin-bottom: 1.2mm; }
+  code { font: 8.6pt Menlo, Consolas, monospace; background: #eef1f6; padding: 0.3mm 1.2mm; border-radius: 2px; color: #172b4d; }
+  .card code { overflow-wrap: anywhere; }
+  pre { font: 8pt/1.45 Menlo, Consolas, monospace; background: #0f1b33; color: #e6edf7; padding: 3.5mm 4mm; border-radius: 4px; white-space: pre-wrap; word-break: break-word; margin: 1mm 0 3.5mm; break-inside: avoid; }
+  pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+  table { border-collapse: collapse; width: 100%; margin: 1.5mm 0 4mm; font-size: 8.8pt; }
+  th { background: var(--brand); color: #fff; text-align: left; padding: 1.8mm 2.2mm; font-weight: 600; }
+  td { border-bottom: 1px solid var(--line); padding: 1.15mm 2.2mm; vertical-align: top; }
+  tr { break-inside: avoid; } tbody tr:nth-child(even) td { background: #f8fafc; }
+  td.n { width: 8mm; color: var(--muted); font-weight: 700; }
+  tr.group { break-after: avoid; }
+  ul.check { break-inside: avoid; }
+  p.next { break-after: avoid; }
+  tr.group td { background: #e9eefb !important; color: var(--brand); font-weight: 700; font-size: 9pt; letter-spacing: .02em; }
+  .callout { border-left: 4px solid var(--brand); background: var(--soft); padding: 2.5mm 3.5mm; margin: 2mm 0 4mm; border-radius: 0 4px 4px 0; break-inside: avoid; }
+  .callout.warn { border-color: var(--warn); background: #fff6e6; } .callout.good { border-color: var(--brand2); background: #e9f7f1; } .callout.bad { border-color: var(--bad); background: #fdecea; }
+  .callout b.t { display: block; margin-bottom: .6mm; }
+  .grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4mm; margin: 2mm 0 4mm; }
+  .card { border: 1px solid var(--line); border-radius: 5px; padding: 3mm 3.5mm; background: #fff; break-inside: avoid; }
+  .card h4 { margin: 0 0 1.5mm; font-size: 10pt; color: var(--brand); }
+  .pill { display: inline-block; background: #e9eefb; color: var(--brand); border-radius: 10px; padding: .4mm 2.4mm; font-size: 8pt; font-weight: 700; margin-right: 1mm; }
+  .steps { counter-reset: s; list-style: none; margin-left: 0; padding-left: 0; }
+  .steps > li { counter-increment: s; }
+  .steps > li { position: relative; padding-left: 8mm; margin-bottom: 1.8mm; }
+  .steps > li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 5.5mm; height: 5.5mm; border-radius: 50%; background: var(--brand); color: #fff; font-size: 8pt; font-weight: 700; text-align: center; line-height: 5.5mm; }
+  .check li { list-style: none; position: relative; padding-left: 6mm; } .check li::before { content: ""; position: absolute; left: 0; top: .9mm; width: 3.2mm; height: 3.2mm; border: 1.4px solid var(--brand); border-radius: 2px; }
+  .small { font-size: 8.6pt; color: var(--muted); }
+  /* cover */
+  .cover { height: 297mm; padding: 34mm 24mm 20mm; background: linear-gradient(160deg, #0b3d91 0%, #0b2f6b 55%, #072349 100%); color: #fff; position: relative; break-after: page; }
+  .cover .tag { font-size: 10pt; letter-spacing: .18em; text-transform: uppercase; color: #9fc0ff; margin-bottom: 8mm; }
+  .cover h1 { color: #fff; border: 0; font-size: 31pt; line-height: 1.12; margin: 0 0 6mm; break-before: auto; }
+  .cover .sub { font-size: 13pt; color: #d6e4ff; max-width: 150mm; margin-bottom: 14mm; }
+  .cover .box { border: 1px solid rgba(255,255,255,.28); border-radius: 6px; padding: 5mm 6mm; max-width: 150mm; background: rgba(255,255,255,.06); }
+  .cover .box div { margin-bottom: 1.6mm; font-size: 10pt; } .cover .box b { color: #9fc0ff; display: inline-block; width: 30mm; }
+  .cover .foot { position: absolute; left: 24mm; bottom: 18mm; font-size: 8.5pt; color: #9fb4d8; max-width: 160mm; }
+  svg text { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; }
+</style>
+</head>
+<body>
+
+<!-- ============================== COVER ============================== -->
+<section class="cover">
+  <div class="tag">Setup guide &middot; Design decisions &middot; Troubleshooting</div>
+  <h1>A Salesforce-connected voice agent on Google CX Agent Studio</h1>
+  <div class="sub">How we set it up end to end (Salesforce, Google Cloud, CX Agent Studio), what each part is for, and every error we hit with the fix, so the next person can skip them.</div>
+  <div class="box">
+    <div><b>What it covers</b> Salesforce External Client App, Secret Manager, the Salesforce connector, the Python tool, instructions, guardrails, saving the call transcript to Salesforce, getting a phone number, testing</div>
+    <div><b>Example agent</b> A phone assistant that verifies a caller by order number and registered phone, then reads out the order status</div>
+    <div><b>Status</b> Built and tested end to end in the Preview simulator, including a saved call transcript. Phone calls not yet tried</div>
+    <div><b>Written</b> 20 November 2026, updated 26 November 2026 (chapter 11: token counts per call)</div>
+  </div>
+  <div class="foot">Placeholders such as &lt;your-domain&gt;, &lt;project-id&gt; and &lt;consumer-key&gt; stand for your own values. No credentials appear in this document.</div>
+</section>
+
+<!-- ============================== SUMMARY ============================== -->
+<h1 class="first">1. The short version</h1>
+
+<p>We built a phone agent in <b>Google CX Agent Studio</b> that answers questions about <b>Salesforce</b> orders. The caller says an order number and the phone number registered on that order. The agent checks both against Salesforce and, only if they match, reads out the status, dates and total.</p>
+
+<div class="grid2">
+  <div class="card"><h4>Two pieces do the Salesforce work</h4>
+    <p><span class="pill">Connector</span> The secure line to Salesforce. It logs in with OAuth and runs the lookup. No password or token lives in the agent.</p>
+    <p><span class="pill">Python tool</span> The gatekeeper. It cleans what the caller said, compares the phone number, counts failed tries, limits access to the caller's own account and returns only safe details.</p></div>
+  <div class="card"><h4>Why not just let the AI call Salesforce?</h4>
+    <p>An AI that writes its own queries can be talked into reading the wrong data, and it matches phone numbers badly ("(416) 555-0142" is not "4165550142"). Putting the rules in code means the AI cannot skip them.</p></div>
+</div>
+
+<div class="callout good"><b class="t">The eight rules that mattered most</b>
+<ol>
+<li>Keep checks and business rules in a <b>Python tool</b>, not in the instructions.</li>
+<li>Let a <b>connector</b> hold the login (OAuth with the secret in Secret Manager). Never store a token or secret in the agent.</li>
+<li>In Salesforce choose the <b>api</b> scope (not "Full access"), enable the <b>client credentials flow</b>, and set a <b>Run As</b> user.</li>
+<li>In Google's connector dialog leave <b>OAuth scopes empty</b>. Salesforce rejects a scope in this flow.</li>
+<li>Test <b>one hop at a time</b>: Salesforce login, then connector, then Python tool, then the full call.</li>
+<li>Give the agent only what a tool returned. Never let it guess dates or facts.</li>
+<li>Make every failure <b>audible</b>: escalate with a spoken apology, never a silent hang-up.</li>
+<li>Never paste a key or secret into a chat or an export. If you did, <b>rotate it</b>.</li>
+</ol></div>
+
+<div class="callout"><b class="t">New in this edition (21 November 2026)</b>
+<ul>
+<li><b>Call transcripts are saved to Salesforce</b> when a call ends (chapter 5). One call in the Preview simulator saved a record with the right outcome, turn count, duration and links to the order and account.</li>
+<li><b>A real phone number</b> comes from a Google Telephony Platform channel (chapter 6). This part is taken from Google's documentation and pricing page; we have not placed a phone call yet.</li>
+<li>Five new catalogue entries (23 to 27), and facts we had guessed are now confirmed by a third console export: where callbacks are stored and how sequential tool execution is saved.</li>
+</ul></div>
+
+<div class="callout"><b class="t">New in this edition (26 November 2026): token counts per call</b>
+<ul>
+<li><b>An agent cannot read its own token use.</b> Callbacks see only the reply text. The real numbers exist only in Google's Cloud Logging (chapter 11).</li>
+<li><b>We first built an estimate</b> (letters divided by a ratio) and then <b>dropped it</b> for exact numbers that Salesforce reads straight from Cloud Logging with a read-only account, about two minutes after each call.</li>
+<li>Measured on real calls: the transcript is saved 0 to 1 seconds after the call ends, and Google's last log entry arrives 1 to 2 seconds after that.</li>
+<li><b>Shorter instructions and tool descriptions</b> can be compared on a dashboard, with one fact that cost us time: the console takes a tool's description from the docstring of its Python code, not from the description field.</li>
+<li>Seven new catalogue entries (28 to 34).</li>
+</ul></div>
+
+<h2>How this document is organised</h2>
+<p><b>2</b> Architecture &nbsp;&middot;&nbsp; <b>3</b> Design decisions &nbsp;&middot;&nbsp; <b>4</b> Setup walkthrough (Salesforce, Google Cloud, CX Agent Studio) &nbsp;&middot;&nbsp; <b>5</b> Saving the call transcript &nbsp;&middot;&nbsp; <b>6</b> Getting a phone number &nbsp;&middot;&nbsp; <b>7</b> Error catalogue (34 entries) &nbsp;&middot;&nbsp; <b>8</b> Security &nbsp;&middot;&nbsp; <b>9</b> Checklists &nbsp;&middot;&nbsp; <b>10</b> How we tested &nbsp;&middot;&nbsp; <b>11</b> Token counts per call: estimate versus exact, and comparing two agents &nbsp;&middot;&nbsp; <b>12</b> Quick reference and the reusable skill</p>
+
+<!-- ============================== ARCHITECTURE ============================== -->
+<h1>2. Architecture</h1>
+
+<svg viewBox="0 0 760 360" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Architecture diagram">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5e6c84"/></marker>
+  </defs>
+  <rect x="0" y="0" width="760" height="360" rx="8" fill="#f8fafc" stroke="#dfe1e6"/>
+  <!-- caller -->
+  <rect x="18" y="130" width="100" height="70" rx="8" fill="#fff" stroke="#8993a4"/>
+  <text x="68" y="158" font-size="12" font-weight="700" text-anchor="middle" fill="#172b4d">Caller</text>
+  <text x="68" y="176" font-size="10" text-anchor="middle" fill="#5e6c84">phone call</text>
+  <!-- agent -->
+  <rect x="150" y="60" width="210" height="230" rx="10" fill="#e9eefb" stroke="#0b3d91" stroke-width="1.6"/>
+  <text x="255" y="82" font-size="12" font-weight="700" text-anchor="middle" fill="#0b3d91">CX Agent Studio voice agent</text>
+  <rect x="166" y="94" width="178" height="38" rx="5" fill="#fff" stroke="#8aa4d8"/><text x="255" y="111" font-size="10.5" font-weight="700" text-anchor="middle" fill="#172b4d">Instructions</text><text x="255" y="124" font-size="9" text-anchor="middle" fill="#5e6c84">what to say and when</text>
+  <rect x="166" y="138" width="178" height="38" rx="5" fill="#fff" stroke="#8aa4d8"/><text x="255" y="155" font-size="10.5" font-weight="700" text-anchor="middle" fill="#172b4d">Guardrails and callbacks</text><text x="255" y="168" font-size="9" text-anchor="middle" fill="#5e6c84">safety, fixed greeting, escalate</text>
+  <rect x="166" y="182" width="178" height="38" rx="5" fill="#fff" stroke="#8aa4d8"/><text x="255" y="199" font-size="10.5" font-weight="700" text-anchor="middle" fill="#172b4d">Variables</text><text x="255" y="212" font-size="9" text-anchor="middle" fill="#5e6c84">verified? attempts? account id</text>
+  <rect x="166" y="226" width="178" height="52" rx="5" fill="#fff4d6" stroke="#ff991f"/><text x="255" y="246" font-size="10.5" font-weight="700" text-anchor="middle" fill="#172b4d">Python tool</text><text x="255" y="259" font-size="9" text-anchor="middle" fill="#5e6c84">authenticate_user: checks,</text><text x="255" y="270" font-size="9" text-anchor="middle" fill="#5e6c84">normalizes, scopes, locks out</text>
+  <!-- connector -->
+  <rect x="400" y="226" width="150" height="52" rx="8" fill="#e3f6ed" stroke="#00875a" stroke-width="1.6"/>
+  <text x="475" y="246" font-size="11" font-weight="700" text-anchor="middle" fill="#006644">Salesforce connector</text><text x="475" y="260" font-size="9" text-anchor="middle" fill="#5e6c84">query_salesforce (OAuth)</text><text x="475" y="271" font-size="9" text-anchor="middle" fill="#5e6c84">operation: find_order</text>
+  <!-- secret manager -->
+  <rect x="400" y="300" width="150" height="44" rx="8" fill="#fff" stroke="#8993a4"/>
+  <text x="475" y="319" font-size="11" font-weight="700" text-anchor="middle" fill="#172b4d">Secret Manager</text><text x="475" y="334" font-size="9" text-anchor="middle" fill="#5e6c84">consumer secret (Google Cloud)</text>
+  <!-- salesforce -->
+  <rect x="590" y="140" width="152" height="140" rx="10" fill="#e8f4fd" stroke="#0b7bc0" stroke-width="1.6"/>
+  <text x="666" y="162" font-size="12" font-weight="700" text-anchor="middle" fill="#0b5f95">Salesforce</text>
+  <rect x="602" y="172" width="128" height="30" rx="5" fill="#fff" stroke="#8cc3e8"/><text x="666" y="191" font-size="10" text-anchor="middle" fill="#172b4d">External Client App</text>
+  <rect x="602" y="208" width="128" height="30" rx="5" fill="#fff" stroke="#8cc3e8"/><text x="666" y="227" font-size="10" text-anchor="middle" fill="#172b4d">Run As user (read-only)</text>
+  <rect x="602" y="244" width="128" height="30" rx="5" fill="#fff" stroke="#8cc3e8"/><text x="666" y="263" font-size="10" text-anchor="middle" fill="#172b4d">Order, Account data</text>
+  <!-- arrows -->
+  <line x1="118" y1="165" x2="148" y2="165" stroke="#5e6c84" stroke-width="1.6" marker-end="url(#a)" marker-start="url(#a)"/>
+  <line x1="344" y1="252" x2="398" y2="252" stroke="#5e6c84" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="371" y="244" font-size="8.5" text-anchor="middle" fill="#5e6c84">tools.call</text>
+  <line x1="550" y1="252" x2="588" y2="252" stroke="#5e6c84" stroke-width="1.6" marker-end="url(#a)" marker-start="url(#a)"/>
+  <text x="569" y="244" font-size="8.5" text-anchor="middle" fill="#5e6c84">HTTPS</text>
+  <line x1="475" y1="300" x2="475" y2="280" stroke="#5e6c84" stroke-width="1.6" marker-end="url(#a)"/>
+  <text x="520" y="294" font-size="8.5" fill="#5e6c84">reads secret</text>
+  <text x="400" y="205" font-size="9.5" fill="#00875a" font-weight="700">The agent never calls the connector itself</text>
+  <text x="400" y="218" font-size="9.5" fill="#00875a">(it is not attached to the agent)</text>
+</svg>
+
+<p class="small">The transcript saver (chapter 5) uses the same path: the Python tool calls a second operation on the same connector, which writes one record to Salesforce when the call ends.</p>
+
+<h2>What each component is for</h2>
+<table><thead><tr><th style="width:36mm">Component</th><th>Role</th><th style="width:48mm">Why it is there</th></tr></thead><tbody>
+<tr><td><b>Instructions</b></td><td>Tell the agent how to behave: greet, ask for the order number, ask for the phone number, call the tool, read the result, escalate when needed.</td><td>Wording and flow. Easy to change.</td></tr>
+<tr><td><b>Python tool</b><br><code>authenticate_user</code></td><td>Cleans the inputs (digits only, order number padded to 8 digits), compares the phone number, counts failed attempts and locks out after 3, limits access to the caller's account, returns only status, dates and total.</td><td>Rules that must always happen. The AI cannot skip code.</td></tr>
+<tr><td><b>Salesforce connector</b><br><code>query_salesforce</code></td><td>Logs in to Salesforce with OAuth (client credentials) and runs one fixed lookup. Gets the secret from Secret Manager.</td><td>Keeps the login out of the code. Nothing sensitive stored in the agent.</td></tr>
+<tr><td><b>Variables</b></td><td><code>caller_verified</code>, <code>verified_record_id</code>, <code>verified_scope_id</code>, <code>verification_attempts</code>. Written by the tool.</td><td>Remember the call's state so other tools can check it.</td></tr>
+<tr><td><b>Guardrails</b></td><td>Block unsafe input and output (hate, harassment, prompt-injection attempts).</td><td>An independent safety net.</td></tr>
+<tr><td><b>Callbacks</b></td><td>Fixed greeting at the start; spoken apology and escalation if a tool reports a system error.</td><td>Exact behaviour with no AI variation.</td></tr>
+<tr><td><b>Transcript saver</b><br><code>save_transcript</code> + an after-model callback</td><td>When the agent ends the call, the callback runs the tool first. The tool writes the whole conversation, the outcome and links to the order and account to one Salesforce record.</td><td>Every call is kept, whether or not the AI remembers to save it.</td></tr>
+<tr><td><b>Secret Manager</b></td><td>Stores the Salesforce consumer secret. The CX Agent Studio service account may read it.</td><td>The only safe place for the secret.</td></tr>
+<tr><td><b>Salesforce app + Run As user</b></td><td>The External Client App issues tokens; the Run As user decides what the agent may read.</td><td>The real security boundary: give it read-only access to only what the tools need.</td></tr>
+</tbody></table>
+
+<h2>What happens on a call</h2>
+<ol class="steps">
+<li>The agent plays a fixed greeting (callback, no AI call needed).</li>
+<li>It asks for the order number and the phone number, reading each back digit by digit to confirm.</li>
+<li>It calls <code>authenticate_user</code>. The tool builds one fixed lookup and calls the connector.</li>
+<li>The connector gets a token from Salesforce with OAuth, runs the lookup and returns the order with its account's phone.</li>
+<li>The tool compares the phone number (digits only), updates the variables and returns a short result: verified or not, plus the safe details.</li>
+<li>The agent reads the result out, or says the details do not match, or escalates to a person on a system error or after 3 failed tries.</li>
+<li>When the agent ends the call, the after-model callback first runs <code>save_transcript</code>, so the conversation is stored in Salesforce before the call closes.</li>
+</ol>
+
+<!-- ============================== DESIGN DECISIONS ============================== -->
+<h1 class="flow">3. Design decisions and why</h1>
+<table><thead><tr><th style="width:44mm">Decision</th><th>Reason</th><th style="width:44mm">What it replaced</th></tr></thead><tbody>
+<tr><td><b>Python tool wraps Salesforce</b></td><td>Google's own best practice. Hides irrelevant fields, controls inputs and outputs, can normalize and validate, keeps the AI context small.</td><td>Letting the AI write queries through a generic connector</td></tr>
+<tr><td><b>Verify with two details in code</b></td><td>The phone number is compared in the tool and is never put in the query or sent back to the AI.</td><td>An exact-text match in the query</td></tr>
+<tr><td><b>Digits only, last 10, order number padded to 8</b></td><td>Salesforce stores phone numbers as typed; callers say "102" for order <code>00000102</code>.</td><td>Matching the caller's words directly</td></tr>
+<tr><td><b>Same message for every failure</b></td><td>Never reveal which detail was wrong or whether an order exists.</td><td>"No such order" versus "wrong phone"</td></tr>
+<tr><td><b>Lockout in code (3 tries)</b></td><td>A prompt can be talked around; a counter in a variable cannot.</td><td>"Allow at most 3 attempts" in the instructions only</td></tr>
+<tr><td><b>Row-level scope</b></td><td>After verification the tool stores the account id; any later data tool adds it to its query, so a caller can never read another customer's records.</td><td>Trusting the AI not to ask</td></tr>
+<tr><td><b>Connector not attached to the agent</b></td><td>The model cannot call raw Salesforce operations. Python can still call it (verified).</td><td>Giving the agent the connector as a tool</td></tr>
+<tr><td><b>OAuth client credentials + Secret Manager</b></td><td>No token to refresh by hand (tokens expire in about two hours), no secret in code or exports.</td><td>A pasted access token in a variable</td></tr>
+<tr><td><b>Fixed query locked by a pattern</b></td><td>The connector's single operation accepts only one query shape. (Whether Google enforces the pattern is unproven; the read-only Run As user is the real boundary.)</td><td>An open-ended query operation</td></tr>
+<tr><td><b>Never default a business fact</b></td><td>A generated tool once returned "Friday, 28th November" when Salesforce had no date. Salesforce has no delivery-date field; the order end date is described as such.</td><td>Fallback values in code</td></tr>
+<tr><td><b>Save the transcript from a callback, at the end</b></td><td>A callback runs every time and cannot be skipped or forgotten by the AI. It adds the save in front of <code>end_session</code>, with the outcome.</td><td>Asking the AI in the instructions to call a save tool</td></tr>
+<tr><td><b>One record per session id (upsert)</b></td><td>Saving the same session twice updates one record, so a retry or a later backup pull cannot create duplicates.</td><td>A new record on every save</td></tr>
+<tr><td><b>Sequential tool execution</b></td><td>The callback puts a tool call and <code>end_session</code> in the same reply. In the default parallel mode the call could end before the save runs. Verified with sequential.</td><td>The default parallel mode</td></tr>
+<tr><td><b>Strip platform notes from caller lines</b></td><td>The platform adds notes such as "agent speaking was interrupted" to caller turns. They are not the caller's words, so the tool removes them.</td><td>Saving the raw text</td></tr>
+<tr><td><b>Voice-optimized model</b></td><td><code>gemini-composite-v2</code> reads numbers and ids better. The console stores no thinking level for it.</td><td>A text model for voice</td></tr>
+</tbody></table>
+
+<!-- ============================== SETUP ============================== -->
+<h1 class="flow">4. Setup walkthrough</h1>
+<p>Do the parts in order and run the test at the end of each part before moving on. Most problems we met were in a lower layer than where they showed up.</p>
+
+<h2>4.1 Salesforce</h2>
+<h3>Know your data first</h3>
+<ul>
+<li>Check the real objects, fields and sample counts before designing tools. For orders: <code>OrderNumber</code> is an auto-number with 8 digits (<code>00000102</code>); only the statuses Draft and Activated exist by default; <code>EndDate</code> is the order end date; an Activated order needs order items; the phone number lives on the Account.</li>
+<li>No test data? Create a few clearly labelled records (we prefixed names with <code>DEMO - </code>), in one transaction, with a cleanup script tested inside a rolled-back transaction first. Phone numbers in the fictional 555-01xx range.</li>
+</ul>
+
+<h3>The user the agent runs as</h3>
+<p>Create a dedicated integration user with a permission set: <b>API Enabled</b>, and read access only to the objects and fields the tools return (Order: number, status, dates, total, account id; Account: phone). For a quick demo an admin works but can read everything; replace it before production.</p>
+
+<h3>Create the External Client App</h3>
+<ol class="steps">
+<li>Setup &rarr; <b>External Client App Manager</b> &rarr; New. Give it a name and a contact email. Turn on <b>Enable OAuth</b>. The callback URL is required by the form but unused here; any https placeholder works.</li>
+<li>On the <b>Settings</b> tab, OAuth Settings, select the scope <b>Manage user data via APIs (api)</b>. <b>Not</b> "Full access (full)": that does not satisfy this flow.</li>
+<li>Still on the Settings tab, tick <b>Enable Client Credentials Flow</b>. Save.</li>
+<li>On the <b>Policies</b> tab click <b>Edit</b>. Tick <b>Enable Client Credentials Flow</b>, choose the <b>Run As</b> user, and set <b>IP Relaxation</b> to <i>Relax IP restrictions</i> (Google's servers have no fixed addresses; tighten later if you can). Leave Permitted Users and the refresh-token settings alone. Save.</li>
+<li>On the Settings tab open <b>Consumer Key and Secret</b>. Salesforce emails a verification code. Copy the key and the secret yourself and do not paste them anywhere public.</li>
+<li>Wait a minute or two. A new app or a changed scope can take a moment to apply.</li>
+</ol>
+
+<h3>Prove it before touching Google</h3>
+<p>In your own terminal (the prompts hide what you type, and the token is never printed):</p>
+<pre><code>printf 'Consumer key: '; read -rs SF_KEY; echo; printf 'Consumer secret: '; read -rs SF_SECRET; echo; export SF_KEY SF_SECRET
+python3 ~/.claude/skills/ces-agent-builder/scripts/sf_oauth_check.py --org &lt;alias&gt; \
+  --soql "SELECT Id,OrderNumber,Account.Phone FROM Order LIMIT 1"</code></pre>
+<div class="callout good"><b class="t">Pass condition</b>Output shows <code>token issued: True</code>, scope <code>api</code>, then <code>QUERY: HTTP 200</code> with an order. On an error the script prints the likely cause and fix. Do not continue until it passes.</div>
+
+<h2>4.2 Google Cloud</h2>
+<ol class="steps">
+<li><b>Enable the Secret Manager API</b> in the project that owns the agent (APIs and Services &rarr; Library &rarr; Secret Manager API &rarr; Enable). It can take a few minutes to take effect. A console message "Secret Manager API has not been used in project ... or it is disabled" means this step is missing.</li>
+<li><b>Create the secret</b> (Security &rarr; Secret Manager &rarr; Create secret). Name <code>salesforce-client-secret</code>; value = the Salesforce consumer secret with no trailing space or newline. Use a standard global secret (regional secrets are not supported here).</li>
+<li><b>Find the project number</b> (Dashboard &rarr; Project info). The CX Agent Studio service account is <code>service-&lt;PROJECT-NUMBER&gt;@gcp-sa-ces.iam.gserviceaccount.com</code>.</li>
+<li><b>Grant it access to that one secret</b>: the secret &rarr; Permissions &rarr; Grant access &rarr; the service account above &rarr; role <b>Secret Manager Secret Accessor</b>.</li>
+<li>Note the secret's version path: <code>projects/&lt;project-id&gt;/secrets/salesforce-client-secret/versions/1</code>. A new secret value creates a new version; select that version in the connector dialog.</li>
+</ol>
+<p>The same from a terminal (the secret comes from the environment, never typed inline):</p>
+<pre><code>gcloud services enable secretmanager.googleapis.com --project=&lt;project-id&gt;
+printf '%s' "$SF_SECRET" | gcloud secrets create salesforce-client-secret --data-file=- --replication-policy=automatic --project=&lt;project-id&gt;
+gcloud secrets add-iam-policy-binding salesforce-client-secret \
+  --member="serviceAccount:service-&lt;PROJECT-NUMBER&gt;@gcp-sa-ces.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor" --project=&lt;project-id&gt;</code></pre>
+
+<h2>4.3 CX Agent Studio</h2>
+<h3>Variables first</h3>
+<p>Declare these before pasting the tool, because the tool writes them:</p>
+<table class="keep"><thead><tr><th>Name</th><th>Type</th><th>Default</th><th>Used for</th></tr></thead><tbody>
+<tr><td><code>caller_verified</code></td><td>Yes/No</td><td>false</td><td>Set true after a successful check</td></tr>
+<tr><td><code>verified_record_id</code></td><td>Text</td><td>empty</td><td>The verified order's Salesforce id</td></tr>
+<tr><td><code>verified_scope_id</code></td><td>Text</td><td>empty</td><td>The account id that limits what the caller can see</td></tr>
+<tr><td><code>verification_attempts</code></td><td>Number</td><td>0</td><td>Failed tries, for the lockout</td></tr>
+</tbody></table>
+
+<h3>The Salesforce tool (connector) dialog</h3>
+<table class="keep"><thead><tr><th style="width:40mm">Field</th><th>Enter</th></tr></thead><tbody>
+<tr><td>Name</td><td><code>query_salesforce</code></td></tr>
+<tr><td>Description</td><td>Salesforce connector used only by the authenticate_user Python tool. The agent never calls it directly.</td></tr>
+<tr><td>Mock tool response</td><td>Leave off</td></tr>
+<tr><td>Server</td><td><code>https://&lt;your-domain&gt;.my.salesforce.com/services/data/v68.0</code></td></tr>
+<tr><td>Authentication type</td><td><b>OAuth</b></td></tr>
+<tr><td>OAuth client ID</td><td>The consumer key from the External Client App</td></tr>
+<tr><td>Secret</td><td><code>salesforce-client-secret</code> and the version</td></tr>
+<tr><td>OAuth endpoint URL</td><td><code>https://&lt;your-domain&gt;.my.salesforce.com/services/oauth2/token</code></td></tr>
+<tr><td>OAuth scopes</td><td><b>Leave empty.</b> Salesforce answers "scope parameter not supported" to a client credentials request that carries a scope.</td></tr>
+<tr><td>Schema (JSON tab)</td><td>One <code>GET /query</code> operation named <code>find_order</code>. The <code>q</code> parameter is locked with a pattern so it accepts only the fixed order lookup; the response lists only the fields the tool reads.</td></tr>
+<tr><td>Advanced tab</td><td>Defaults. Keep "Ignore unknown fields" off.</td></tr>
+</tbody></table>
+<div class="callout"><b class="t">Do not attach it to the agent</b>The Python tool calls the connector as <code>tools.query_salesforce_find_order({"q": soql})</code> (connector name, underscore, operation id). This works while the Root agent's own tool list holds only the Python tool and <code>end_session</code>, so the model cannot call raw Salesforce operations.</div>
+
+<h3>The Python tool</h3>
+<ul>
+<li>Name <code>authenticate_user</code>, lowercase snake_case, matching the reference in the instructions exactly.</li>
+<li>It takes <code>order_number</code> and <code>phone_number</code>, builds the fixed lookup, calls the connector, compares the phone number in code, updates the four variables and returns a small result.</li>
+<li>Result contract: success has <code>verified: true</code> and the details. Failures have <code>error</code> (<code>not_verified</code>, <code>invalid_input</code>, <code>locked_out</code>, <code>salesforce_auth_failed</code>, <code>salesforce_error</code>, <code>tool_error</code>) and a short message. System problems add <code>system_error: true</code>.</li>
+</ul>
+
+<h3>Instructions, callbacks, guardrails, model</h3>
+<ul>
+<li><b>Instructions:</b> structured (role, persona, constraints, task flow). Name the tool with <code>{@TOOL: authenticate_user}</code>. Spell out what to do for each result: verified, not verified (try again, never say which detail), locked out or system error (escalate). List <code>end_session</code> among the agent's tools. Never let the agent guess a date.</li>
+<li><b>Callbacks:</b> a fixed greeting at session start, and a callback that speaks an apology and ends the session as escalated when a tool reports a system error.</li>
+<li><b>Guardrails:</b> keep the two defaults and check that each toggle is on. Add an LLM policy only for rules that must never break (it adds delay to every reply).</li>
+<li><b>Model and voice:</b> <code>gemini-composite-v2</code> with a Chirp 3 HD voice.</li>
+</ul>
+
+<h2>4.4 Test in this order</h2>
+<table class="keep"><thead><tr><th style="width:8mm">#</th><th style="width:42mm">Test</th><th>Good result</th></tr></thead><tbody>
+<tr><td class="n">1</td><td>Salesforce login in a terminal</td><td>Token issued, scope <code>api</code></td></tr>
+<tr><td class="n">2</td><td>The same lookup the agent runs</td><td>HTTP 200 with the order and its account phone</td></tr>
+<tr><td class="n">3</td><td><b>Test Tool</b> on <code>authenticate_user</code> with a real order and phone</td><td><code>verified: true</code> with the details and the variables updated</td></tr>
+<tr><td class="n">4</td><td>Test Tool with a wrong phone</td><td><code>not_verified</code>, <code>verification_attempts</code> becomes 1</td></tr>
+<tr><td class="n">5</td><td>Preview agent, a full happy-path call</td><td>Greeting, confirmations, status read out, goodbye</td></tr>
+<tr><td class="n">6</td><td>Preview: three wrong attempts</td><td>Lockout and escalation</td></tr>
+<tr><td class="n">7</td><td>Preview: break something on purpose (empty or revoked secret)</td><td>A spoken apology and escalation, not silence</td></tr>
+</tbody></table>
+
+<!-- ============================== TRANSCRIPTS ============================== -->
+<h1>5. Saving the call transcript to Salesforce</h1>
+<p>Goal: when a call ends, the whole conversation is stored in one Salesforce record, linked to the order and the account, so a person can read it later. <span class="pill">Verified in Preview</span> A call finished in the Preview simulator saved a record with the right outcome, turn count, duration and links.</p>
+
+<h2>5.1 How it works</h2>
+<ol class="steps">
+<li>The agent decides the call is over and asks to run <code>end_session</code>: finished, escalated or a system problem.</li>
+<li>An <b>after-model callback</b> sees this and puts a <code>save_transcript</code> call in front of <code>end_session</code>, with the outcome (completed, escalated or system error).</li>
+<li>With <b>sequential tool execution</b> the save runs first and finishes before the call ends.</li>
+<li>The <code>save_transcript</code> Python tool builds the text from the session's events, one <code>Caller:</code> or <code>Agent:</code> line per turn. It masks card and social security number patterns, cuts anything past 120,000 characters, and adds start, end, duration, turn count, the verified flag and the order and account ids kept in variables.</li>
+<li>It calls the connector's <code>save_transcript</code> operation, which creates the record or, if that session id was saved before, updates it. One call, one record.</li>
+</ol>
+
+<h2>5.2 What was built</h2>
+<table class="keep"><thead><tr><th style="width:62mm">Piece</th><th>What it is</th></tr></thead><tbody>
+<tr><td>Salesforce object <code>Voice_Call_Transcript__c</code></td><td>Eleven fields: <code>Session_Id__c</code> (the unique key), <code>Transcript__c</code> (long text), start and end time, duration, turn count, <code>Outcome__c</code> (picklist: Completed, Escalated, Verification failed, System error, Unknown), <code>Caller_Verified__c</code>, <code>Agent_Name__c</code> and lookups to the order and account.</td></tr>
+<tr><td>Permission set <code>Voice_Agent_Transcript_Writer</code></td><td>Create and edit on that object only. Assigned to the Run As user of the External Client App.</td></tr>
+<tr><td>Connector operation <code>save_transcript</code></td><td>Added to the schema of the same connector (<code>query_salesforce</code>). A PATCH on <code>/sobjects/Voice_Call_Transcript__c/Session_Id__c/{session_id}</code>; the body allows only the object's fields.</td></tr>
+<tr><td>Python tool <code>save_transcript</code></td><td>On the Root agent's tool list, never mentioned in the instructions. Its description says it runs automatically and the agent must not call it.</td></tr>
+<tr><td>After-model callback</td><td>On the Root agent. Adds the save call in front of <code>end_session</code>.</td></tr>
+<tr><td>Tool execution mode</td><td>App settings, Tools, Execution mode: <b>Sequential</b>.</td></tr>
+</tbody></table>
+<div class="callout"><b class="t">No new variables</b>The tool reads the four variables the verification tool already writes. The order and account links come from <code>verified_record_id</code> and <code>verified_scope_id</code>.</div>
+
+<h2>5.3 Steps in the console</h2>
+<p class="next">Deploy the Salesforce object and permission set first (check-only deploy before the real one). Then, in this order:</p>
+<ol class="steps">
+<li><b>Connector:</b> replace the Salesforce tool's schema with the version that has two operations, <code>find_order</code> and <code>save_transcript</code>. Leave authentication alone.</li>
+<li><b>Python tool:</b> create <code>save_transcript</code> and paste the code. In Test Tool expect <code>invalid_input</code> or <code>empty_transcript</code> (no real session there); that only proves the code loads.</li>
+<li><b>Agent:</b> add <code>save_transcript</code> to the Root agent's tools.</li>
+<li><b>Callback:</b> add the after-model callback to the Root agent last, so it never refers to a tool that does not exist yet.</li>
+<li><b>Execution mode:</b> set it to Sequential in the app settings.</li>
+<li><b>Test:</b> run a full call in Preview, then look in Salesforce.</li>
+</ol>
+<pre><code>sf data query -o &lt;alias&gt; -q "SELECT Id, Session_Id__c, Outcome__c, Turn_Count__c, Duration_Seconds__c, Order__c, Account__c FROM Voice_Call_Transcript__c ORDER BY CreatedDate DESC LIMIT 5"</code></pre>
+
+<h2>5.4 What a real saved record looked like</h2>
+<table class="keep"><thead><tr><th style="width:50mm">Field</th><th>Value from the Preview test call</th></tr></thead><tbody>
+<tr><td>Outcome</td><td>Completed</td></tr>
+<tr><td>Turns / duration</td><td>7 caller turns, 57 seconds</td></tr>
+<tr><td>Caller verified</td><td>true</td></tr>
+<tr><td>Order and account</td><td>Both linked</td></tr>
+<tr><td>Session id</td><td>Starts with <code>simulator-</code> in Preview</td></tr>
+<tr><td>Text</td><td>14 lines, each starting <code>Agent:</code> or <code>Caller:</code>, no system events</td></tr>
+</tbody></table>
+<p>Shape of the saved text (shortened; the digits the agent read back were spelled out one by one):</p>
+<pre><code>Agent: Hello, thank you for calling &lt;company&gt;. ... How can I help you with your order today?
+Caller: &lt;the request&gt;
+Agent: ... Could you please provide your order number?
+Caller: &lt;order number&gt;
+Agent: I have your order number as &lt;digits&gt;. Is that correct?
+Caller: Yes.</code></pre>
+
+<h2>5.5 What we learned</h2>
+<div class="grid2">
+<div class="card"><h4>Found in the real record</h4><ul>
+<li>Caller lines began with <code>&lt;context&gt;agent speaking was interrupted. user only heard '...'&lt;/context&gt;</code> whenever the caller talked over the agent. The tool now strips these notes. If you pasted the first version of the tool, replace its code.</li>
+<li>Preview session ids start with <code>simulator-</code>, which separates test calls from real ones.</li></ul></div>
+<div class="card"><h4>Confirmed by the console export</h4><ul>
+<li>The tool, the callback and the new connector operation were exported exactly as pasted.</li>
+<li>Callbacks are stored as <code>after_model_callbacks/after_model_callbacks_01/python_code.py</code>, so a folder name does not tell you what a callback does.</li>
+<li>Sequential execution is the app setting <code>toolExecutionMode: SEQUENTIAL</code>.</li></ul></div>
+</div>
+<div class="callout warn"><b class="t">Known gap: a caller who hangs up is not saved</b>The save runs only when the agent itself ends the call. If the caller hangs up first, no record is written. Pulling finished sessions through the Conversations API would cover this; it would use the same session id, so no duplicates. On a real phone line this matters more than in Preview.</div>
+
+<h2>5.6 Privacy</h2>
+<ul>
+<li>A transcript holds personal data and sometimes health or payment details. Restrict the object (sharing and field-level security), decide a retention period, and decide who may read it.</li>
+<li>On voice, a recording or transcription notice to callers is usually required. The greeting callback can speak one.</li>
+<li>Card and social security masking is a safety net, not a guarantee. Google's own log redaction does not cover the copy stored in Salesforce.</li>
+<li>The tool prints counts and status only, never the transcript text.</li>
+</ul>
+
+<h2>5.7 What is proven and what is not</h2>
+<table class="keep"><thead><tr><th style="width:62mm">Item</th><th>Status</th></tr></thead><tbody>
+<tr><td>Save on a completed call, through the connector, with links, duration and sequential mode</td><td><b>Verified</b> in Preview</td></tr>
+<tr><td>Escalated, system error and failed-verification outcomes</td><td>Offline tests only</td></tr>
+<tr><td>Card masking, very long calls, saving one session twice</td><td>Offline tests only</td></tr>
+<tr><td>Hiding the tool from the model while the callback runs it</td><td>Not tried (optional, left out)</td></tr>
+<tr><td>Callers who hang up</td><td>Not saved (known gap)</td></tr>
+<tr><td>Calls over a real phone number</td><td>Not tried</td></tr>
+</tbody></table>
+
+<!-- ============================== PHONE NUMBER ============================== -->
+<h1 class="flow">6. Getting a phone number for the agent</h1>
+<p><span class="pill">From Google's documentation and pricing page</span> We have not provisioned a number or placed a call. Check the current pages before you rely on any detail.</p>
+
+<h2>6.1 The route</h2>
+<p>CX Agent Studio can give an agent its own number through a <b>Google Telephony Platform (GTP)</b> channel. No Twilio or carrier is needed to start.</p>
+<ol class="steps">
+<li>Enable the Dialogflow API in the project and make sure the agent has a saved version. The channel deploys a version, not the draft.</li>
+<li>In the agent open <b>Deploy</b>, then <b>Connect to a platform</b> (or <b>+ New channel</b> if there is one already).</li>
+<li>Name the channel and set <b>Platform</b> to <b>Google Telephony Platform (GTP)</b>.</li>
+<li>Set <b>Connection type</b> to the <b>standard PSTN</b> option. The default is a virtual number, which an ordinary phone cannot dial.</li>
+<li>Choose the version. Optionally set channel behaviour: response length, keypad (DTMF) input, interruptions.</li>
+<li>Click <b>Create channel</b>. The console shows the number. Call it to test, then click <b>Done</b>.</li>
+</ol>
+
+<h2>6.2 Options and limits</h2>
+<table class="keep"><thead><tr><th style="width:44mm">Option</th><th style="width:34mm">Dialable from a normal phone?</th><th>Notes</th></tr></thead><tbody>
+<tr><td>GTP standard PSTN number</td><td>Yes</td><td>Only for apps in the <code>us</code> multi-region. If the app is elsewhere, create an app in <code>us</code> and import the export zip into it.</td></tr>
+<tr><td>GTP virtual number</td><td>No</td><td>Works in <code>eu</code> too. Test it in the browser widget (Deploy tab, icon next to the channel), or route calls to it from your own carrier or session border controller over a SIP trunk.</td></tr>
+<tr><td>An existing number</td><td>Yes</td><td>Forward it from your carrier or session border controller to the GTP number.</td></tr>
+<tr><td>Twilio</td><td>Yes</td><td>An open-source adapter that you deploy in your own Google Cloud project.</td></tr>
+</tbody></table>
+<div class="callout"><b class="t">Calling from India</b>The GTP number is a US number. Callers in India dial the international prefix and <code>+1</code> and pay their carrier's international rate. We found no Google restriction on such calls, and nothing on Indian numbers from GTP. Try one real call before relying on it. For Indian customers the realistic alternatives (an Indian number from a carrier or Twilio, forwarded in) are untested.</div>
+
+<h2>6.3 What it costs (what we found)</h2>
+<table class="keep"><thead><tr><th style="width:62mm">Item</th><th>What the pages say</th></tr></thead><tbody>
+<tr><td>CX Agent Studio, voice or chat</td><td>$0.50 per session. $0.45 and $0.40 with one- and three-year savings plans.</td></tr>
+<tr><td>Long voice calls</td><td>After 300 seconds a voice call is billed $0.0025 per second instead of per session.</td></tr>
+<tr><td>Included at no extra charge</td><td>Automated evaluations, AI augmentation and monitoring</td></tr>
+<tr><td>Phone number rental and per-minute telephony</td><td><b>Not listed</b> on that page. Check Billing, or ask Google, before launch.</td></tr>
+<tr><td>Free credits</td><td>Google Cloud advertises $300 for new customers. Dialogflow lists its own trial credits ($600 for flow agents, $1,000 for playbook agents, expiring after 12 months). Whether any of this covers CX Agent Studio sessions or a phone number is not confirmed.</td></tr>
+</tbody></table>
+<p>There is no permanent free number. The cheapest ways to use the agent: test in the browser widget (the session charge applies, no number needed); provision a number only for a demo, then delete the channel and watch the Billing page (that deleting releases the number is unconfirmed); ask whoever owns billing about credits.</p>
+
+<h2>6.4 What changes in the agent on a phone line</h2>
+<ul>
+<li><b>Caller's number:</b> it arrives in a variable named exactly <code>telephony-caller-id</code> (type Text) if you declare it. It can be spoofed, so keep the order number and phone check; it could be saved with the transcript.</li>
+<li><b>Handing over to a person:</b> Google's way is two variables, <code>telephonyTransferCall</code> (an object holding <code>phoneNumber</code> in E.164 format) and optionally <code>escalationMessage</code>, plus <code>end_session</code> with escalation set. What our agent's escalation does on a phone line without them has not been tried.</li>
+<li><b>Ending calls:</b> <code>end_session</code> must be on the agent. It already is.</li>
+<li><b>Order numbers by voice:</b> keypad input (DTMF) can be switched on in the channel behaviour.</li>
+<li><b>Hang-ups</b> leave no transcript (chapter 5).</li>
+<li><b>A public number:</b> anyone who has it can call, and each call is billed. Details are only given after verification.</li>
+</ul>
+
+<!-- ============================== ERRORS ============================== -->
+<h1 class="flow">7. The error catalogue</h1>
+<p>Every entry below really happened. Find your symptom, apply the fix.</p>
+
+<table class="errors"><thead><tr><th style="width:7mm">#</th><th style="width:44mm">What you see</th><th style="width:52mm">Why it happens</th><th>How to fix it</th></tr></thead><tbody>
+<tr class="group"><td colspan="4">Instructions and tools</td></tr>
+<tr><td class="n">1</td><td>Red line "There is a problem with your instructions" under <code>{@TOOL: Authenticate_user}</code></td><td>The reference does not match a tool attached to the agent: capital letters, the tool was never saved, or it was removed.</td><td>Tool names are lowercase snake_case and case sensitive. Attach the tool, then copy its exact name into the reference.</td></tr>
+<tr><td class="n">2</td><td>The "Bearer token" field will not take a pasted token</td><td>It is a dropdown of variables, not a text box.</td><td>Create a text variable holding the token and select it. Demo only: it expires in about two hours.</td></tr>
+<tr><td class="n">3</td><td>An exported agent contained a live access token</td><td>Variable default values are exported in plain text.</td><td>Ship secrets empty. Validate every export before sharing. Switch to OAuth with Secret Manager.</td></tr>
+<tr><td class="n">4</td><td>Phone numbers do not match; the AI writes risky queries</td><td>Salesforce stores phones as typed ("(416) 555-0142"). A generic connector lets the AI build the query.</td><td>Python wrapper tool: digits only (last 10), pad order numbers, escape or restrict values, compare in code.</td></tr>
+<tr><td class="n">5</td><td>The agent says an invented delivery date</td><td>A fallback value in generated code; Salesforce has no delivery-date field.</td><td>Never default a business fact. Return only what Salesforce returned. Instruct "never guess a date". Call EndDate the order end date.</td></tr>
+<tr><td class="n">6</td><td>The call ends silently after an error</td><td>The instruction says escalate, but the model spoke nothing before ending the session.</td><td>Use the escalate callback: it speaks a fixed apology, then ends the session as escalated.</td></tr>
+<tr><td class="n">7</td><td>Verification passes with a blank phone on the record</td><td>The comparison had no blank-value guard.</td><td>A blank stored value never matches. Tests cover it.</td></tr>
+<tr><td class="n">8</td><td>The caller can tell which detail was wrong</td><td>Different messages for unknown order and wrong phone.</td><td>One message for every failure. Never confirm an order exists.</td></tr>
+<tr class="group"><td colspan="4">Salesforce</td></tr>
+<tr><td class="n">9</td><td><code>sf org display</code> shows a placeholder, not a token</td><td>The CLI now redacts secrets.</td><td><code>sf org auth show-access-token --target-org &lt;alias&gt;</code> (expires in about two hours).</td></tr>
+<tr><td class="n">10</td><td><code>invalid_client_id</code>, or a token length of 0</td><td>Wrong or empty consumer key; or the shell variables were never set in that terminal tab.</td><td>Re-copy the key. <code>echo ${#SF_KEY} ${#SF_SECRET}</code> must print two numbers above 0.</td></tr>
+<tr><td class="n">11</td><td><code>invalid_grant: no valid scopes defined</code></td><td>The app has no scope that works for client credentials. "Full access" does not count.</td><td>Select <b>Manage user data via APIs (api)</b>, save, wait a minute.</td></tr>
+<tr><td class="n">12</td><td><code>invalid_request: scope parameter not supported</code></td><td>A scope was sent in the request: Google's "OAuth scopes" field was filled in.</td><td>Leave Google's OAuth scopes <b>empty</b>. The scope belongs to the Salesforce app.</td></tr>
+<tr><td class="n">13</td><td><code>unsupported_grant_type</code> or "no client credentials user enabled"</td><td>The flow is not enabled, or there is no Run As user.</td><td>Settings tab (flow enablement) and Policies tab (Enable Client Credentials Flow, Run As user).</td></tr>
+<tr><td class="n">14</td><td>Token works but the lookup returns 403</td><td>The Run As user lacks API Enabled or access to a field.</td><td>Fix the profile or permission set. Re-test with the OAuth check and a query.</td></tr>
+<tr><td class="n">15</td><td><code>IP restricted</code></td><td>IP Relaxation is "Enforce IP restrictions"; Google's addresses vary.</td><td>Relax IP restrictions on the app (tighten later if you can).</td></tr>
+<tr><td class="n">16</td><td>Orders cannot be activated or deleted</td><td>Activation needs order items; an activated order must return to Draft before deletion.</td><td>Create items first; the cleanup script sets Draft before deleting.</td></tr>
+<tr class="group"><td colspan="4">Google Cloud and CX Agent Studio</td></tr>
+<tr><td class="n">17</td><td>"Secret Manager API has not been used in project ... or it is disabled"</td><td>The API is off. OAuth and API-key authentication need it.</td><td>Enable the API, wait a few minutes, retry.</td></tr>
+<tr><td class="n">18</td><td>Tool returns <code>salesforce_error</code> with <code>code: 403</code></td><td>The OAuth chain failed: Salesforce refused the login, or the CX Agent Studio service account cannot read the secret.</td><td>Test Salesforce alone first. Then check the secret's Permissions tab (Accessor role) and the secret value.</td></tr>
+<tr><td class="n">19</td><td>Preview ends right after the tool step with no answer</td><td>A system error was escalated.</td><td>Run Test Tool on the Python tool and read the <code>error</code> value, then use this table.</td></tr>
+<tr><td class="n">20</td><td>Worry: can Python call a connector that is not attached to the agent?</td><td>Unknown at first.</td><td>Verified: yes. It also stops the model from calling the connector.</td></tr>
+<tr><td class="n">21</td><td>Test Tool output looks wrapped (<code>response</code> then <code>result</code>)</td><td>The console wraps a tool's return value.</td><td>Read the result object inside. The generated code also copes with a wrapped connector body.</td></tr>
+<tr><td class="n">22</td><td>A guardrail seems inactive</td><td>An export with no <code>enabled</code> key means disabled. The Default Prompt Guardrail exported that way.</td><td>Check each guardrail's toggle in the console after import.</td></tr>
+<tr class="group"><td colspan="4">Transcripts</td></tr>
+<tr><td class="n">23</td><td>Worry: <code>end_session</code> ends the call before the transcript is saved</td><td>Tools run in parallel by default.</td><td>Verified: with execution mode <b>Sequential</b> and the after-model callback, the save ran first and the record appeared.</td></tr>
+<tr><td class="n">24</td><td>Caller lines in the saved text start with <code>&lt;context&gt;agent speaking was interrupted ...&lt;/context&gt;</code></td><td>The platform adds notes about interrupted speech to the caller's turn.</td><td>The tool strips <code>&lt;context&gt;...&lt;/context&gt;</code> notes. Re-paste the updated tool if you have the first version.</td></tr>
+<tr><td class="n">25</td><td>Hard to tell test calls from real ones in Salesforce</td><td>Preview session ids start with <code>simulator-</code>.</td><td>Filter on <code>Session_Id__c LIKE 'simulator-%'</code>.</td></tr>
+<tr><td class="n">26</td><td>A caller who hangs up leaves no transcript</td><td>The save runs only when the agent emits <code>end_session</code>.</td><td>Known gap. Pull finished sessions through the Conversations API as a backstop; the same session id prevents duplicates.</td></tr>
+<tr><td class="n">27</td><td>An exported callback's folder is <code>after_model_callbacks_01</code>, not a descriptive name</td><td>The console numbers callbacks.</td><td>Tell callbacks apart by their code. Our test tool recognises each template by markers in the code.</td></tr>
+<tr class="group"><td colspan="4">Token counts, Cloud Logging and Salesforce credentials</td></tr>
+<tr><td class="n">28</td><td>Salesforce cannot get a Google login: <code>invalid_scope</code>, "Invalid OAuth scope or ID token audience provided"</td><td>Google reads the scope from inside the signed token (the JWT). The Scope box of the External Credential is not sent that way.</td><td>On the External Credential add a JWT body claim named <code>scope</code> with the value <code>https://www.googleapis.com/auth/logging.read</code>.</td></tr>
+<tr><td class="n">29</td><td>The certificate file <code>.crt</code> is greyed out in Google's "Upload existing key" picker</td><td>The file picker accepts only certain endings.</td><td>Make a copy with the ending <code>.pem</code> (same text) and upload that.</td></tr>
+<tr><td class="n">30</td><td>A batch of log lookups fails with "Exceeded maximum time allotted for callout (120000 ms)"</td><td>The log search had no time window. Google then scans a huge range and returns empty pages with a next-page token: about 36 seconds per call, so 25 calls exceed Salesforce's 120 seconds in total.</td><td>Always search a time window (3 hours either side of the call: about 1 second). Stop starting new lookups after 60 seconds and continue in the next run.</td></tr>
+<tr><td class="n">31</td><td>A check-only deploy fails its tests: "fields being inaccessible" or "No such column" on a new field</td><td>New fields do not exist yet during a check-only deploy, and nobody has field access to them.</td><td>Deploy the fields first, then check-only the code. Run tests that touch the new fields as a test user who holds the permission set.</td></tr>
+<tr><td class="n">32</td><td>An existing test fails after adding a trigger: "open transcript must not queue: Expected 0, Actual 1"</td><td>The new trigger queued a job for every insert, including calls still open.</td><td>Queue only when the record is, or becomes, Closed.</td></tr>
+<tr><td class="n">33</td><td>After editing the tool descriptions in the package, the console still shows the long ones</td><td>The console builds a Python tool's description from the docstring at the top of its code. It ignores the description field in the tool's JSON.</td><td>Put the short text in the docstring of the Python code (and in the JSON). Check by exporting the app and counting letters.</td></tr>
+<tr><td class="n">34</td><td>Importing a generated zip into CX Agent Studio repeats "network error"</td><td>Not found. The zip had the same layout as one built earlier, and the checks passed. A zip import had never been proven in this project.</td><td>Look at the failing request in the browser's Network tab. Meanwhile use the proven route: copy the working app and paste the instruction, the tool files and the connector schema.</td></tr>
+</tbody></table>
+
+<div class="callout warn"><b class="t">How to debug in practice</b>The 403 in Google looked like a Google problem, but the real causes sat underneath it: first the terminal variables were empty, then the Salesforce app had no valid scope. Testing the Salesforce login on its own found both in minutes.</div>
+
+<!-- ============================== SECURITY ============================== -->
+<h1 class="flow">8. Security lessons</h1>
+<div class="grid2">
+<div class="card"><h4>Secrets</h4><ul>
+<li>Never put a token or secret in an agent file, a variable default, a chat or a ticket.</li>
+<li>Exports write variable defaults in plain text. Validate before sharing.</li>
+<li>A pasted secret is an exposed secret: regenerate it, add the new value as a new Secret Manager version, select that version.</li>
+<li>Enter keys with a hidden prompt (<code>read -rs</code>), not on the command line, so they stay out of history.</li></ul></div>
+<div class="card"><h4>Least privilege</h4><ul>
+<li>The agent can do whatever the Run As user can. Create a dedicated user with read-only access to only the needed fields.</li>
+<li>Grant the secret role on the one secret, not the project.</li>
+<li>Keep sensitive fields (birth date, financial, health) out of what tools return.</li>
+<li>Relaxed IP settings are a demo convenience; tighten them for production.</li></ul></div>
+<div class="card"><h4>Deterministic controls</h4><ul>
+<li>Verification, lockout and scope live in code and variables, not in prose.</li>
+<li>The connector is hidden from the model.</li>
+<li>One failure message for every wrong answer.</li>
+<li>Write tools (if any) need an explicit caller confirmation flag and a field whitelist.</li></ul></div>
+<div class="card"><h4>Transcripts</h4><ul>
+<li>They hold personal data. Restrict who can read the object and set a retention period.</li>
+<li>Tell callers they are being recorded or transcribed where the law requires it.</li>
+<li>Masking of card and social security numbers is a safety net, not a guarantee.</li>
+<li>The integration user needs create and edit on the transcript object and nothing else.</li></ul></div>
+<div class="card"><h4>A public phone number</h4><ul>
+<li>Anyone who has the number can call, and every call is billed. Watch usage and set a budget alert.</li>
+<li>The caller's number can be spoofed. Never treat it as proof of identity.</li>
+<li>Give details only after the two-detail check, exactly as in Preview.</li></ul></div>
+<div class="card"><h4>Honest limits</h4><ul>
+<li>A query pattern in the connector schema is defence in depth; whether the platform enforces it is unproven.</li>
+<li>Guardrails reduce risk; they do not replace the controls above.</li>
+<li>Recording and redaction settings are a policy decision to make deliberately.</li></ul></div>
+</div>
+
+<!-- ============================== CHECKLISTS ============================== -->
+<h1 class="flow">9. Checklists</h1>
+<h2>Best practices</h2>
+<ul class="check">
+<li>One tool per business task; the tool does the whole job. Never chain tools in the instructions.</li>
+<li>Distinct, verb-first, lowercase snake_case tool names; parameters flat, typed and well named.</li>
+<li>Return only what the agent needs, in a stable result shape (<code>ok</code>, <code>error</code>, <code>message</code>, <code>system_error</code>).</li>
+<li>Configuration in static variables (<code>{{company_name}}</code>), call state in variables written by tools (<code>{caller_verified}</code>).</li>
+<li>Instructions: role, persona, numbered constraints, task flow; every step has a trigger and an action; every tool result is handled.</li>
+<li>Voice: short sentences, one question at a time, read digits one by one, confirm numbers before using them.</li>
+<li>A fixed greeting and a spoken escalation, both as callbacks.</li>
+<li>If a callback adds a tool call next to <code>end_session</code>, set tool execution to sequential.</li>
+<li>Keep internal tools (such as the transcript saver) out of the instructions and say in their description that the agent must not call them.</li>
+<li>Guardrails: the two defaults enabled, plus only the extra rules that must never break.</li>
+<li>Test each layer separately; keep a regression test for every bug found.</li>
+</ul>
+<h2>Before go-live</h2>
+<ul class="check">
+<li>Run As user is a dedicated least-privilege user; IP relaxation tightened as far as possible.</li>
+<li>Any secret that appeared in a chat or document has been rotated.</li>
+<li>The latest export has been validated and contains no secrets.</li>
+<li>Each guardrail's toggle is on; model and voice chosen; recording and redaction policy decided.</li>
+<li>Failure paths tested: wrong details, lockout, empty secret, Salesforce unreachable.</li>
+<li>A version snapshot taken; channel and modality set in the deployment.</li>
+<li>Test data removed or clearly separated from real data.</li>
+<li>Transcripts: who can read the object, the retention period and the caller notice are decided; the hang-up gap is accepted or covered.</li>
+<li>Phone number: a real call from outside has been tested; cost, region and a budget alert are checked; the transfer number for escalation is set if people take over calls.</li>
+</ul>
+
+<!-- ============================== TESTING ============================== -->
+<h1 class="flow">10. How we tested it</h1>
+<table class="keep"><thead><tr><th style="width:44mm">Method</th><th>What it proved</th></tr></thead><tbody>
+<tr><td>Offline scenarios for every tool</td><td>Correct details, wrong details, blank value, unknown order, lockout, empty input, 401 and 500 replies, no token in any result, no query injection.</td></tr>
+<tr><td>Read-only runs against real data</td><td>The query text, the field names and the result mapping work against the real org, with no token handled by the test. Wrong phone and a no-phone account were refused; another account's data was not reachable.</td></tr>
+<tr><td>Deliberate breakage</td><td>The tests were run against copies of the tool with a safeguard removed (escaping, the verified gate, attempt counting, scope filter, a leaked token, the 401 mapping). Each was caught.</td></tr>
+<tr><td>Comparison with real exports</td><td>The files our generator writes were compared with three exports from the console. The latest confirmed where callbacks are stored and how sequential execution is saved, and showed the console keeps our tool, callback and connector operation exactly as pasted.</td></tr>
+<tr><td>Behaviour tests for callbacks</td><td>Each callback template is run against a faked CX runtime: greeting, escalation, silence prompt, redaction, mandatory text, the end-of-call save and hiding a tool. Deliberately broken copies were caught.</td></tr>
+<tr><td>Read-only check after a test call</td><td>A query on the transcript object showed the record the Preview call created: outcome, turn count, duration and links were right. Reading the saved text exposed the interruption notes that the tool now strips.</td></tr>
+<tr><td>Salesforce login on its own</td><td>Found the empty variables, the missing scope and the scope-parameter problem before Google was involved.</td></tr>
+<tr><td>Test Tool and Preview in the console</td><td>The final design works: verification, answer, and the failure paths.</td></tr>
+</tbody></table>
+<div class="callout warn"><b class="t">Still unproven</b><ul>
+<li>Whether Google enforces the pattern that locks the connector's query.</li>
+<li>The folders for before-model, agent and tool callbacks, and the non-default guardrail types, in a generated import package (the after-model layout is confirmed by an export).</li>
+<li>Saving escalated and system-error calls in the console; hiding the transcript tool from the model while the callback runs it; transcripts of callers who hang up.</li>
+<li>Phone calls through a Google Telephony Platform number, and what they cost.</li>
+<li>Behaviour under real call volume, and with a least-privilege Run As user if you started with an admin.</li></ul></div>
+
+<!-- ============================== REFERENCE ============================== -->
+<!-- ============================== TOKEN COUNTS ============================== -->
+<h1>11. Token counts per call: estimate versus exact, and comparing two agents</h1>
+<p>Question: how many tokens does one voice call use, and can that be saved on the call record in Salesforce for cost visibility? This chapter is what we measured, what we built, what we dropped and why.</p>
+
+<div class="callout good"><b class="t">The short version</b>
+<ol>
+<li>A callback <b>cannot read</b> the real token counts. The real counts exist only in the platform trace and in <b>Cloud Logging</b>.</li>
+<li>We first built an <b>estimate</b> inside the agent (letters divided by a ratio). We then <b>dropped it</b>: its error was never measured, it cannot see the model's hidden thinking, and it needs the agent to be edited.</li>
+<li>The method we kept: <b>Salesforce reads the exact numbers from Cloud Logging</b> with a read-only Google service account, and adds them up on the call record. No new Google service is needed besides that one account.</li>
+<li>Timing measured on real Preview calls: transcript saved <b>0 to 1 second</b> after the call ends; Google's last log entry arrives <b>1 to 2.3 seconds</b> after that; the numbers are on the record about <b>2 minutes</b> after the call.</li>
+<li>The <b>guardrail model's tokens</b> are not in Google's log, so the totals never include them.</li>
+</ol></div>
+
+<h2>11.1 Can the agent read its own token use? No</h2>
+<p>We probed from inside the agent with two spike callbacks and printed everything they could see.</p>
+<table class="keep"><thead><tr><th style="width:52mm">What the callback receives</th><th>What it holds</th></tr></thead><tbody>
+<tr><td><code>llm_response</code></td><td>Only <code>content</code>, <code>partial</code>, <code>turn_complete</code>. No usage field.</td></tr>
+<tr><td><code>callback_context</code></td><td><code>events</code>, <code>state</code> (our own variables), <code>actions</code> (flags such as end_invocation), <code>session_id</code>, <code>variables</code>. No usage field.</td></tr>
+<tr><td>The session events inside it</td><td>Author, content, timestamp, flags. Still no usage field.</td></tr>
+</tbody></table>
+
+<h2>11.2 Where the real numbers are</h2>
+<ul>
+<li><b>Switch on:</b> in the app's logging settings tick <b>Enable Cloud Logging</b> (it was off). <b>Export logs to BigQuery</b> can stay off. Logs exist only from the day it was switched on.</li>
+<li><b>Where:</b> the log <code>ces.googleapis.com/responses</code>, one entry per turn, labelled with the session id. The Logs Explorer is not in the left menu: open <code>https://console.cloud.google.com/logs/query?project=&lt;project-id&gt;</code>.</li>
+<li><b>Inside an entry:</b> a tree of "spans" in <code>jsonPayload.diagnosticInfo.rootSpan.childSpans</code>. Tool spans can contain other spans.</li>
+</ul>
+<table class="keep"><thead><tr><th style="width:30mm">Span</th><th>What it carries</th></tr></thead><tbody>
+<tr><td><code>LLM</code></td><td><code>input token count</code>, <code>output token count</code>, <code>thought token count</code>, <code>model</code>. A turn can have several (the model runs again after a tool call).</td></tr>
+<tr><td><code>TTS</code> (voice)</td><td><code>tts input token count</code>, <code>tts output token count</code>, <code>audio duration (ms)</code>, <code>speculative</code>. The plain <code>input token count</code> and <code>output token count</code> repeat the tts pair: count only one pair or the voice is counted twice.</td></tr>
+<tr><td><code>Guardrail</code></td><td>Model name, reason, triggered. <b>No token counts.</b> Guardrail tokens cannot be read.</td></tr>
+</tbody></table>
+<ul>
+<li>Voice output is <b>25 tokens per second of audio</b>, exactly.</li>
+<li>Even a tiny conversation sends about <b>4,000 to 4,400 input tokens per model call</b>: the instructions and tool descriptions are re-sent every time and the conversation adds only about 80 to 90 per exchange.</li>
+<li>Redaction hides sensitive text in the logs, not the numbers.</li>
+<li>Google's log-search API allows <b>60 reads per minute per project</b> (not increasable) and is not meant for high volume. For big volume use a log sink.</li>
+</ul>
+
+<h2>11.3 Estimate versus exact</h2>
+<table class="keep"><thead><tr><th style="width:38mm">Approach</th><th>What it is</th><th>Outcome</th></tr></thead><tbody>
+<tr><td><b>A. Estimate in the agent</b></td><td>A before-model callback counts the letters sent to the model and an after-model callback counts the reply and the voice. Starting rates: 3.5 letters per input token, 3.5 per output token, 3 per voice input token, 2.2 words per second, 25 voice tokens per second. Totals kept in variables and saved on the transcript.</td><td>Built and tested offline only. <b>Never run in the console</b>, so its error was never measured. The "10 to 20 percent" figure we first quoted was a guess. It cannot see thinking tokens, the guardrail, or text added by hooks. <b>Dropped.</b></td></tr>
+<tr><td><b>B. Exact, with a helper in Google</b></td><td>A Cloud Run job and a scheduler read each finished session's spans and write them to Salesforce.</td><td>Planned, not built: a service, a service account, a secret and permissions per client.</td></tr>
+<tr><td><b>C. Exact, read by Salesforce</b></td><td>Salesforce calls the Cloud Logging API itself with a read-only service account and adds up the spans.</td><td><b>Chosen and built.</b> A hand check of one call matched Google's own entries exactly.</td></tr>
+</tbody></table>
+
+<h2>11.4 How the exact method works</h2>
+<ol>
+<li><b>Service account</b> in the Google project with only the <b>Logs Viewer</b> role (granted on the IAM page of the project, not on the account's own Permissions tab).</li>
+<li><b>Certificate made inside Salesforce</b> (self-signed, private key not exportable). Only the public half is uploaded to the service account (Keys, Upload existing key). No key file is ever downloaded. The certificate lasts one year: put the expiry in a calendar.</li>
+<li><b>External Credential</b> with the OAuth 2.0 <b>JWT Bearer</b> flow: issuer and subject are the service account email, audience and token endpoint are Google's token address, expiry 3600 seconds, signed with the certificate, plus the extra <code>scope</code> claim (catalogue entry 28). A principal and a <b>Named Credential</b> pointing at <code>https://logging.googleapis.com</code>.</li>
+<li><b>Permission sets:</b> one giving the External Credential principal to whoever saves the transcripts, one for the new fields and classes.</li>
+<li><b>Apex:</b> a service class that searches the session's entries inside a time window and adds up the <code>LLM</code> spans (input, output, thought) and the <code>TTS</code> spans (the tts pair only); a queueable that fills the transcripts that have no numbers yet; a trigger that starts it two minutes after a transcript becomes <b>Closed</b>; an optional 15-minute schedule that retries failures. The Google project id lives in a custom metadata record in the org, not in the repository.</li>
+<li><b>Fields on the transcript:</b> input, output, thought, voice input, voice output, total, a status (Done, No log entries, Error ...) and the time of the last check. Total = all five parts; the guardrail is not included.</li>
+</ol>
+
+<h2>11.5 What the numbers looked like</h2>
+<table class="keep"><thead><tr><th>Call (short Preview calls)</th><th>Model in / out / thought</th><th>Voice in / out</th><th>Total</th></tr></thead><tbody>
+<tr><td>Call 1</td><td>34,112 / 246 / 14</td><td>142 / 864</td><td>35,378</td></tr>
+<tr><td>Call 2</td><td>57,964 / 407 / 0</td><td>229 / 1,439</td><td>60,039</td></tr>
+<tr><td>Call 3</td><td>63,332 / 477 / 0</td><td>243 / 1,475</td><td>65,527</td></tr>
+<tr><td>Call 4</td><td>38,532 / 357 / 87</td><td>159 / 975</td><td>40,110</td></tr>
+<tr><td>Call 5</td><td>34,124 / 279 / 47</td><td>142 / 885</td><td>35,477</td></tr>
+</tbody></table>
+<ul>
+<li><b>More than 99% of the tokens are input</b>, mostly the instructions and tool descriptions re-sent on every model call.</li>
+<li><b>Thought tokens are not always 0</b> (14, 47, 87 here). An estimate inside the agent could never have seen them.</li>
+<li>Calls made before logging was switched on have no log: their status says "No log entries".</li>
+</ul>
+
+<h2>11.6 Comparing two agents: the optimization experiment</h2>
+<p>Goal: show the token difference between the existing agent and a copy with a shorter rulebook, on the same conversation.</p>
+<table class="keep"><thead><tr><th style="width:44mm"></th><th>Baseline</th><th>Optimized</th></tr></thead><tbody>
+<tr><td>Instruction</td><td>7,666 letters</td><td>4,219 letters (-45%)</td></tr>
+<tr><td>Tool descriptions the model reads</td><td>3,075 letters</td><td>1,968 letters (-36%)</td></tr>
+<tr><td>Tools, callbacks, voice, connector</td><td colspan="2">identical</td></tr>
+<tr><td>Label saved on each transcript</td><td><code>Baseline</code></td><td><code>Optimized</code></td></tr>
+</tbody></table>
+<ul>
+<li><b>Every sentence the caller hears and every rule is kept word for word</b>; only repetition was removed. Behaviour must be checked in Preview, because it cannot be tested offline.</li>
+<li><b>The label</b> is a fixed value inside each agent's save tool (field <code>Voice_Agent_Name__c</code>). The tool template supports number variables only, so a text variable would not have worked.</li>
+<li><b>The dashboard</b> section "Token Comparison" shows one bar per call, a filter by agent, and the average tokens per call with the percent difference. It reads only transcripts whose numbers are saved.</li>
+<li><b>Use the same script</b> on both agents, three or four times each, and compare averages: thinking tokens vary between runs.</li>
+<li><b>Tool descriptions:</b> the console reads them from the Python docstring (catalogue entry 33). Our first package edited only the JSON field, so the shorter descriptions never reached the agent until an export showed the old lengths.</li>
+<li><b>Keep the two apps in step:</b> same variables (the console sorts them alphabetically), same Preview phone default, Cloud Logging ON in both.</li>
+<li>A chart drawn as one stretched picture looked far too big next to the existing small boxes. Plain HTML bars with normal small text fit the page.</li>
+</ul>
+
+<h2>11.7 Limits and open questions</h2>
+<ul>
+<li>The <b>guardrail model's tokens</b> are not available from Google's log, so they cannot be counted.</li>
+<li><b>Speculative voice tokens:</b> most voice spans are marked <code>speculative: true</code>. We count them all. Whether Google bills them is not confirmed.</li>
+<li>How long Google keeps these logs is not verified.</li>
+<li>The lookup runs <b>as the user who saves the transcript</b>. That user needs the permission sets for the Google login and for the new fields. If the Run As user is replaced, give the new user both.</li>
+<li>A caller who hangs up before the agent ends the call leaves no transcript, so no numbers.</li>
+<li>The certificate expires after a year (ours on 26 November 2027).</li>
+</ul>
+
+<h1>12. Quick reference</h1>
+<h2>Names used in the example</h2>
+<table class="keep"><thead><tr><th style="width:52mm">Item</th><th>Value</th></tr></thead><tbody>
+<tr><td>Python tool</td><td><code>authenticate_user</code> (<code>order_number</code>, <code>phone_number</code>)</td></tr>
+<tr><td>Connector (Salesforce tool)</td><td><code>query_salesforce</code>, operation <code>find_order</code>; Python calls <code>query_salesforce_find_order</code></td></tr>
+<tr><td>Secret</td><td><code>salesforce-client-secret</code> in Secret Manager</td></tr>
+<tr><td>CX Agent Studio service account</td><td><code>service-&lt;PROJECT-NUMBER&gt;@gcp-sa-ces.iam.gserviceaccount.com</code></td></tr>
+<tr><td>Token endpoint</td><td><code>https://&lt;your-domain&gt;.my.salesforce.com/services/oauth2/token</code></td></tr>
+<tr><td>Server</td><td><code>https://&lt;your-domain&gt;.my.salesforce.com/services/data/v68.0</code></td></tr>
+<tr><td>Variables</td><td><code>caller_verified</code>, <code>verified_record_id</code>, <code>verified_scope_id</code>, <code>verification_attempts</code></td></tr>
+<tr><td>Transcript tool and operation</td><td>Python tool <code>save_transcript</code> (optional <code>outcome</code>); connector operation <code>save_transcript</code>, called as <code>query_salesforce_save_transcript</code></td></tr>
+<tr><td>Transcript object and permissions</td><td><code>Voice_Call_Transcript__c</code> (key <code>Session_Id__c</code>), permission set <code>Voice_Agent_Transcript_Writer</code></td></tr>
+<tr><td>Tool execution mode</td><td>App setting <code>toolExecutionMode</code>: <code>SEQUENTIAL</code></td></tr>
+<tr><td>Caller's number on a phone line</td><td>Variable <code>telephony-caller-id</code> (Text)</td></tr>
+</tbody></table>
+
+<h2>Useful commands</h2>
+<pre><code># list orgs signed in to the Salesforce CLI (no tokens shown)
+sf org list
+
+# a fresh access token for manual tests (about two hours; treat it like a password)
+sf org auth show-access-token --target-org &lt;alias&gt;
+
+# check the Salesforce login and a lookup (hidden prompts)
+python3 sf_oauth_check.py --org &lt;alias&gt; --soql "SELECT Id,OrderNumber FROM Order LIMIT 1"
+
+# check-only deploy of the transcript object and permission set (nothing is changed)
+sf project deploy start -o &lt;alias&gt; --dry-run --source-dir force-app/main/default/objects/Voice_Call_Transcript__c --source-dir force-app/main/default/permissionsets/Voice_Agent_Transcript_Writer.permissionset-meta.xml
+
+# did a test call save a transcript?
+sf data query -o &lt;alias&gt; -q "SELECT Id, Session_Id__c, Outcome__c, Turn_Count__c FROM Voice_Call_Transcript__c ORDER BY CreatedDate DESC LIMIT 5"
+
+# compare a package the skill built with an export from the console
+python3 compare_to_export.py &lt;built-package&gt; &lt;console-export&gt;</code></pre>
+
+<h2>The reusable skill</h2>
+<p>All of this is packaged as a Claude skill, <code>ces-agent-builder</code>, so the next agent can be built without repeating the work. It interviews you (purpose, org, tasks, tone), inspects the Salesforce org read-only, proposes the full design for approval (tools, variables, guardrails, instructions, tests), then builds, validates, self-tests and zips an import-ready package. It includes the setup guide and error catalogue from this document, an OAuth checker, and examples including this agent.</p>
+<table class="keep"><thead><tr><th style="width:66mm">Part of the skill</th><th>What it is</th></tr></thead><tbody>
+<tr><td><code>scripts/sf_discover.py</code></td><td>Read-only look at the org's objects, fields, picklists and counts</td></tr>
+<tr><td><code>scripts/build_agent.py</code></td><td>Specification in, import-ready package out (validates and self-tests first)</td></tr>
+<tr><td><code>scripts/validate_package.py</code></td><td>Checks any exported or generated package, including a secret scan</td></tr>
+<tr><td><code>scripts/sf_oauth_check.py</code></td><td>Tests the Salesforce client credentials login and explains errors</td></tr>
+<tr><td><code>scripts/selftest_callbacks.py</code></td><td>Behaviour tests for the callbacks in a package or an export</td></tr>
+<tr><td><code>scripts/compare_to_export.py</code></td><td>Compares a built package with a console export, file by file and key by key</td></tr>
+<tr><td><code>references/transcripts.md</code></td><td>Saving call transcripts: design, spec, Salesforce files, privacy, status</td></tr>
+<tr><td><code>references/setup-gcp-and-salesforce.md</code>, <code>lessons-learned.md</code></td><td>The setup walkthrough and the error catalogue</td></tr>
+</tbody></table>
+
+<h2>Glossary</h2>
+<table><thead><tr><th style="width:44mm">Term</th><th>Meaning</th></tr></thead><tbody>
+<tr><td>CX Agent Studio</td><td>Google's console for building conversational (voice and chat) agents</td></tr>
+<tr><td>Connector / Salesforce tool</td><td>A tool that calls an API from a schema, with Google handling the login</td></tr>
+<tr><td>External Client App</td><td>The Salesforce object that lets an outside system sign in with OAuth</td></tr>
+<tr><td>Client credentials flow</td><td>An OAuth login for a program (no person at a screen); it runs as one fixed Salesforce user</td></tr>
+<tr><td>Run As user</td><td>The Salesforce user the agent's calls run as; its permissions are the agent's permissions</td></tr>
+<tr><td>Secret Manager</td><td>Google Cloud's store for secrets such as the consumer secret</td></tr>
+<tr><td>Service agent</td><td>The Google-managed account CX Agent Studio uses to read the secret</td></tr>
+<tr><td>Session id</td><td>The unique id of one call. The transcript is saved under it, so saving twice updates the same record</td></tr>
+<tr><td>Upsert</td><td>Create the record if it is new, update it if it exists, matched on a key such as the session id</td></tr>
+<tr><td>Google Telephony Platform (GTP)</td><td>The Google service that gives an agent a phone number</td></tr>
+<tr><td>PSTN number</td><td>An ordinary phone number that anyone can dial. A virtual number cannot be dialled from an ordinary phone</td></tr>
+<tr><td>DTMF</td><td>Keypad tones. Lets a caller key in digits instead of saying them</td></tr>
+<tr><td>Callback</td><td>A short Python function that runs at a fixed point in the call (before or after the AI speaks)</td></tr>
+<tr><td>Guardrail</td><td>A safety check on what the caller says and what the agent replies</td></tr>
+<tr><td>Scope</td><td>What an OAuth token may do. For Salesforce choose "api"; leave it empty in Google's dialog</td></tr>
+</tbody></table>
+
+</body>
+</html>
