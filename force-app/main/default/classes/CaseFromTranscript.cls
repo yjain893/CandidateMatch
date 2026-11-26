@@ -1,7 +1,7 @@
 /**
  * Creates a Case from a saved call transcript (Chat_Conversation__c).
  * Calls the prompt template Create_Case_From_Transcript, checks the category
- * against the live Case.Category__c picklist, and links the Case to the transcript.
+ * against the live Case.Category__c picklist, and sets Chat_Conversation__c.Case__c to the new Case.
  * Does not touch Is_Classified__c.
  */
 public with sharing class CaseFromTranscript {
@@ -43,11 +43,11 @@ public with sharing class CaseFromTranscript {
     /** Returns the existing Case for this conversation, or creates one. */
     public static Case createCase(Id conversationId) {
         if (conversationId == null) throw new CaseException('conversationId is required');
-        List<Case> existing = [SELECT Id, Category__c FROM Case WHERE Chat_Conversation__c = :conversationId LIMIT 1];
-        if (!existing.isEmpty()) return existing[0];
-
-        List<Chat_Conversation__c> convs = [SELECT Id, Transcript__c FROM Chat_Conversation__c WHERE Id = :conversationId LIMIT 1];
+        List<Chat_Conversation__c> convs = [SELECT Id, Transcript__c, Case__c FROM Chat_Conversation__c WHERE Id = :conversationId LIMIT 1];
         if (convs.isEmpty()) throw new CaseException('Chat Conversation not found: ' + conversationId);
+        if (convs[0].Case__c != null) {
+            return [SELECT Id, Category__c FROM Case WHERE Id = :convs[0].Case__c LIMIT 1];
+        }
 
         List<String> allowed = categoryValues();
         Map<String, Object> parsed = parse(generate(conversationId, allowed));
@@ -61,10 +61,11 @@ public with sharing class CaseFromTranscript {
             Subject = subject.abbreviate(255),
             Description = description,
             Category__c = category,
-            Origin = 'Phone',
-            Chat_Conversation__c = conversationId
+            Origin = 'Phone'
         );
         insert c;
+        // Link the transcript to the new Case (the lookup lives on the transcript).
+        update new Chat_Conversation__c(Id = conversationId, Case__c = c.Id);
         return c;
     }
 

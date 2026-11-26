@@ -13,11 +13,11 @@ private class CaseFromTranscriptTest {
         Test.startTest();
         Case made = CaseFromTranscript.createCase(c.Id);
         Test.stopTest();
-        Case got = [SELECT Subject, Description, Category__c, Origin, Chat_Conversation__c FROM Case WHERE Id = :made.Id];
+        Case got = [SELECT Subject, Description, Category__c, Origin FROM Case WHERE Id = :made.Id];
         System.assertEquals('Order status', got.Subject);
         System.assertEquals('Order Status', got.Category__c);
         System.assertEquals('Phone', got.Origin);
-        System.assertEquals(c.Id, got.Chat_Conversation__c);
+        System.assertEquals(made.Id, [SELECT Case__c FROM Chat_Conversation__c WHERE Id = :c.Id].Case__c);
     }
 
     @IsTest
@@ -35,7 +35,7 @@ private class CaseFromTranscriptTest {
         Case a = CaseFromTranscript.createCase(c.Id);
         Case b = CaseFromTranscript.createCase(c.Id);
         System.assertEquals(a.Id, b.Id);
-        System.assertEquals(1, [SELECT COUNT() FROM Case WHERE Chat_Conversation__c = :c.Id]);
+        System.assertEquals(1, [SELECT COUNT() FROM Case WHERE Id IN (SELECT Case__c FROM Chat_Conversation__c WHERE Id = :c.Id)]);
     }
 
     @IsTest
@@ -69,7 +69,7 @@ private class CaseFromTranscriptTest {
             try { CaseFromTranscript.createCase(c.Id); System.assert(false, 'should fail'); }
             catch (CaseFromTranscript.CaseException e) { System.assert(true); }
         }
-        System.assertEquals(0, [SELECT COUNT() FROM Case WHERE Chat_Conversation__c = :c.Id]);
+        System.assertEquals(0, [SELECT COUNT() FROM Case WHERE Id IN (SELECT Case__c FROM Chat_Conversation__c WHERE Id = :c.Id)]);
     }
 
     @IsTest

@@ -14,7 +14,7 @@ private class CaseFromTranscriptQueueableTest {
         Chat_Conversation__c c = make('Closed', 'Caller: hi');
         Test.startTest();
         Test.stopTest();
-        System.assertEquals(1, [SELECT COUNT() FROM Case WHERE Chat_Conversation__c = :c.Id]);
+        System.assertEquals(1, [SELECT COUNT() FROM Case WHERE Id IN (SELECT Case__c FROM Chat_Conversation__c WHERE Id = :c.Id)]);
     }
 
     @IsTest
@@ -23,7 +23,7 @@ private class CaseFromTranscriptQueueableTest {
         Test.startTest();
         Chat_Conversation__c c = make('Closed', 'Caller: hi');
         Test.stopTest();
-        System.assertEquals(1, [SELECT COUNT() FROM Case WHERE Chat_Conversation__c = :c.Id]);
+        System.assertEquals(1, [SELECT COUNT() FROM Case WHERE Id IN (SELECT Case__c FROM Chat_Conversation__c WHERE Id = :c.Id)]);
         Integer before = Limits.getQueueableJobs();
         c.Transcript__c = 'Caller: hi again';
         update c;
@@ -39,7 +39,7 @@ private class CaseFromTranscriptQueueableTest {
         c.Conversation_Status__c = 'Closed';
         update c;
         Test.stopTest();
-        System.assertEquals(1, [SELECT COUNT() FROM Case WHERE Chat_Conversation__c = :c.Id]);
+        System.assertEquals(1, [SELECT COUNT() FROM Case WHERE Id IN (SELECT Case__c FROM Chat_Conversation__c WHERE Id = :c.Id)]);
     }
 
     @IsTest
@@ -47,7 +47,7 @@ private class CaseFromTranscriptQueueableTest {
         Chat_Conversation__c c = make('Closed', '');
         Test.startTest();
         Test.stopTest();
-        System.assertEquals(0, [SELECT COUNT() FROM Case WHERE Chat_Conversation__c = :c.Id]);
+        System.assertEquals(0, [SELECT COUNT() FROM Case WHERE Id IN (SELECT Case__c FROM Chat_Conversation__c WHERE Id = :c.Id)]);
     }
 
     @IsTest
@@ -56,7 +56,7 @@ private class CaseFromTranscriptQueueableTest {
         Chat_Conversation__c c = make('Closed', 'Caller: hi');
         Test.startTest();
         Test.stopTest();
-        System.assertEquals(0, [SELECT COUNT() FROM Case WHERE Chat_Conversation__c = :c.Id]);
+        System.assertEquals(0, [SELECT COUNT() FROM Case WHERE Id IN (SELECT Case__c FROM Chat_Conversation__c WHERE Id = :c.Id)]);
         System.assertEquals(1, [SELECT COUNT() FROM Chat_Conversation__c WHERE Id = :c.Id]);
     }
 }

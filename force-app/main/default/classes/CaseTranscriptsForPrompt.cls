@@ -19,18 +19,17 @@ public with sharing class CaseTranscriptsForPrompt {
             return 'NO TRANSCRIPT RECORDS';
         }
         List<String> lines = new List<String>();
-        for (Case c : [SELECT Chat_Conversation__c FROM Case WHERE Id = :caseId AND Chat_Conversation__c != null LIMIT 1]) {
-            for (Chat_Conversation__c t : [
-                SELECT Name, Start_Timestamp__c, Message_Count__c, Transcript__c
-                FROM Chat_Conversation__c
-                WHERE Id = :c.Chat_Conversation__c
-                LIMIT :MAX_TRANSCRIPTS
-            ]) {
-                lines.add('Call transcript'
-                    + (t.Start_Timestamp__c != null ? ' | Started: ' + t.Start_Timestamp__c.format() : '')
-                    + (t.Message_Count__c != null ? ' | Messages: ' + String.valueOf(t.Message_Count__c) : '')
-                    + (String.isNotBlank(t.Transcript__c) ? ' | Transcript: ' + clip(t.Transcript__c) : ' | Transcript: (empty)'));
-            }
+        for (Chat_Conversation__c t : [
+            SELECT Name, Start_Timestamp__c, Message_Count__c, Transcript__c
+            FROM Chat_Conversation__c
+            WHERE Case__c = :caseId
+            ORDER BY Start_Timestamp__c DESC NULLS LAST
+            LIMIT :MAX_TRANSCRIPTS
+        ]) {
+            lines.add('Call transcript'
+                + (t.Start_Timestamp__c != null ? ' | Started: ' + t.Start_Timestamp__c.format() : '')
+                + (t.Message_Count__c != null ? ' | Messages: ' + String.valueOf(t.Message_Count__c) : '')
+                + (String.isNotBlank(t.Transcript__c) ? ' | Transcript: ' + clip(t.Transcript__c) : ' | Transcript: (empty)'));
         }
         return lines.isEmpty() ? 'NO TRANSCRIPT RECORDS' : String.join(lines, '\n');
     }

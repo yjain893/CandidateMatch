@@ -19,8 +19,9 @@
     <fieldPermissions><editable>true</editable><field>Chat_Conversation__c.Est_Voice_Input_Tokens__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Chat_Conversation__c.Est_Voice_Output_Tokens__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Chat_Conversation__c.Est_Total_Tokens__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Chat_Conversation__c.Voice_Agent_Name__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Case.Category__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Case.Chat_Conversation__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Chat_Conversation__c.Case__c</field><readable>true</readable></fieldPermissions>
     <classAccesses><apexClass>CaseFromTranscript</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>CaseFromTranscriptQueueable</apexClass><enabled>true</enabled></classAccesses>
     <userPermissions><enabled>true</enabled><name>ApiEnabled</name></userPermissions>
