@@ -14,11 +14,6 @@
     <fieldPermissions><editable>true</editable><field>Chat_Conversation__c.Has_Human_Agent__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Chat_Conversation__c.Transcript_Hash__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Chat_Conversation__c.Analysis_Status__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Chat_Conversation__c.Est_Model_Input_Tokens__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Chat_Conversation__c.Est_Model_Output_Tokens__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Chat_Conversation__c.Est_Voice_Input_Tokens__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Chat_Conversation__c.Est_Voice_Output_Tokens__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Chat_Conversation__c.Est_Total_Tokens__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Chat_Conversation__c.Voice_Agent_Name__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Case.Category__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Chat_Conversation__c.Case__c</field><readable>true</readable></fieldPermissions>

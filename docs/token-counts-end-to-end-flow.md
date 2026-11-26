@@ -70,6 +70,18 @@ Example (made up): last night's call about an address change is graded "Resolved
 
 Why you may see "Pending" right after a call: the grading happens at night, not at call end. The token numbers (2 minutes) and the Case (seconds) are much faster than the analytics row (next 01:00).
 
+## A1d. Which agent made the call, and the comparison dashboard (added 26 Nov)
+
+There are two voice agents in the project: the **baseline** (`ces-agents/abbott-customer-service-serviceorg-baseline`) and an **optimized** copy (`...-optimized`) with a shorter instruction and shorter tool descriptions. Both talk to the same Salesforce, so their calls land in the same place.
+1. Each agent's save tool sends a fixed label with the transcript: `Voice_Agent_Name__c = Baseline` or `Optimized`. It is a fixed value in the tool code (the tool template supports number variables only).
+2. The token lookup (steps 6 to 9 above) is unchanged: it adds the real numbers to the same record.
+3. The section **Token Comparison**, at the bottom of the existing Chat Analytics Dashboard, reads only transcripts with saved numbers. It shows one small bar per call (coloured by agent, or split into model input, output, thought and voice), a filter by agent, an average tile per agent, and a box such as "34.7% fewer" for Optimized against Baseline.
+4. Calls made before the label existed show as `Unlabelled`.
+
+Example (made up numbers): five Baseline calls average 40,000 tokens, five Optimized calls average 31,000. The box says "22.5% fewer".
+
+Use the same script on both agents, three or four times each, and compare averages: thinking tokens vary between runs.
+
 ## A2. What `VoiceAgentApi` is for (the gate), with an example
 
 Your admin user is a **master key** that opens every door in the building. The agent borrows a key to get into Salesforce. `VoiceAgentApi` is a **window with a slot and a clerk** so the agent never holds the master key itself.
@@ -109,7 +121,8 @@ Is it needed? Not for access (the admin user can read everything anyway). It is 
 - **Salesforce code, tokens:** `VoiceAgentApi` (agent in), `TokenActualsTrigger`, `TokenActualsQueueable`, `TokenActualsService`, `TokenActualsScheduler` (optional), `TokenActualsServiceTest` (13 tests).
 - **Salesforce code, Cases:** `ChatConversationCaseTrigger`, `CaseFromTranscriptQueueable`, `CaseFromTranscript` (+ tests), prompt template `Create_Case_From_Transcript`, fields `Case.Chat_Conversation__c` and `Case.Category__c`; extra: `CaseTranscriptsForPrompt` and a Draft version of the template `Summarise_Case_All_Components`.
 - **Salesforce code, Chat Analytics (pre-existing, not in the repo):** `ChatAnalyticsScheduler`, `ChatAnalyticsOrchestrator`, `ChatAnalyticsQueueable`, `ChatAnalyticsInvocationQueueable`, `ChatAnalyticsService`, `ChatAnalyticsAgentInvoker` (+ interface `ChatAnalyticsAgentProvider`), `GetChatConversationContextAction`, `ChatTranscriptBuilder`, `ChatConversationRefreshQueueable`, `ChatAnalyticsDashboardController`, the LWC `chatAnalyticsDashboard` (in the repo), the scheduled job `ChatAnalyticsSchedulerDaily`, the Agentforce agent "Chat Analytics Agent".
-- **Salesforce data:** `Chat_Conversation__c` (plus the new `Actual_*` fields), `Case`, `Chat_Analytics__c`.
+- **Salesforce data:** `Chat_Conversation__c` (plus the new `Actual_*` fields and `Voice_Agent_Name__c`), `Case`, `Chat_Analytics__c`.
+- **Comparison:** `TokenComparisonController` (+ test), the component `tokenComparisonDashboard` embedded in `chatAnalyticsDashboard`, the permission set `Token_Comparison_Access`.
 
 ---------------------------------------------------------------------------------------------------
 
@@ -189,7 +202,7 @@ Two more branches start from the same Closed transcript:
 7. **Test that proved it** (Execute Anonymous, read-only): a callout to `callout:Google_Logging_API/v2/entries:list` returned status 200 and a body containing `input token count`.
 
 ## B6. Data model and code in the repo (`force-app/main/default`)
-- **Fields** on `Chat_Conversation__c` (Number 18,0 unless noted): `Actual_Model_Input_Tokens__c`, `Actual_Model_Output_Tokens__c`, `Actual_Model_Thought_Tokens__c`, `Actual_Voice_Input_Tokens__c`, `Actual_Voice_Output_Tokens__c`, `Actual_Total_Tokens__c` (sum of the five; guardrail not included), `Actual_Tokens_Status__c` (Text 255), `Actual_Tokens_Checked_At__c` (DateTime). The older `Est_*` fields stay, unused.
+- **Fields** on `Chat_Conversation__c` (the comparison label `Voice_Agent_Name__c` is in B6d; Number 18,0 unless noted): `Actual_Model_Input_Tokens__c`, `Actual_Model_Output_Tokens__c`, `Actual_Model_Thought_Tokens__c`, `Actual_Voice_Input_Tokens__c`, `Actual_Voice_Output_Tokens__c`, `Actual_Total_Tokens__c` (sum of the five; guardrail not included), `Actual_Tokens_Status__c` (Text 255), `Actual_Tokens_Checked_At__c` (DateTime). The older `Est_*` fields stay, unused.
 - **Custom metadata** `Token_Log_Config__mdt` with field `Project_Id__c`. The record named `Default` is created in the org (Setup, Custom Metadata Types, Manage Records), never committed.
 - **`TokenActualsService`:** `fetchTotals(sessionId, anchor)`. Validates the session id (letters, digits, `_`, `-`, up to 100: blocks filter injection), reads the project id, builds the filter `logName=... AND labels.session_id=... AND timestamp>=anchor-3h AND timestamp<=anchor+3h`, posts `{resourceNames, filter, orderBy: timestamp asc, pageSize: 100}`, follows `nextPageToken` up to 10 pages (then status "Partial"), request timeout 30 s, error text limited to 150 letters of Google's message. Parsing: skip repeated `insertId`; walk spans; `LLM` adds the three counts; `TTS` adds only the two `tts ...` counts; numbers may arrive as numbers or text. `apply()` sets fields and status: `No log entries`, `No token counts found`, `Done`, `Partial: ...`; `applyError()` sets `Error: ...`.
 - **`TokenActualsQueueable`** (`Database.AllowsCallouts`): selects `Conversation_Identifier__c != null`, created at least 1 minute and at most 7 days ago, status empty, or (status `No log entries` or `Error%`, checked more than 15 minutes ago, created within 3 hours); oldest first, up to 25; stops starting new lookups after 60 s (leftover records stay untouched and the job re-queues itself in 1 minute); all callouts first, one `update` at the end.
@@ -220,6 +233,19 @@ Two more branches start from the same Closed transcript:
 - **Dashboard:** the LWC `chatAnalyticsDashboard` (in the repo; percent rounding fixed on 25 Nov) uses `ChatAnalyticsDashboardController` to read `Chat_Analytics__c`. The first four rows come from failed test calls (license-limit period) and pull numbers down; the user has not decided whether to delete them.
 - **Tests that exist in the org:** `ChatAnalyticsProcessingTest`, `ChatAnalyticsOrchestrationTest`, `ChatAnalyticsNormalizedAnalyticsTest`, `ChatAnalyticsDashboardControllerTest`.
 - **Not changed by us.** Interplay with the token work: none; they only share the `Chat_Conversation__c` record. The new `Actual_*` fields do not affect eligibility.
+
+## B6d. Two agents and the comparison dashboard (26 Nov)
+- **Agents (in `ces-agents/`, built with the skill's `build_agent.py`; each folder has `spec.json`, `build.sh`, `finalize_package.py`, `console/`, `out/`, git-excluded `import-ready/`):**
+  - baseline: instruction 7,666 letters, tool descriptions 3,075 letters, label `Baseline`.
+  - optimized: instruction 4,219 letters (-45%), tool descriptions 1,968 letters (-36%), label `Optimized`. Everything else identical (6 Python tools, 5 callbacks, 10 variables, same connector and Secret Manager secret).
+  - The label is `fixed_values: {"Voice_Agent_Name__c": "<name>"}` in the `save_transcript` tool and the field is in the connector schema (`upsert_record` fields). `variable_fields` is numbers only, so a text variable was not used.
+  - `finalize_package.py` sets `enableCloudLogging: true`, the Preview default of `telephony-caller-id` (a fictional test number) and sorts variables and tools like a console export, so the zip equals an export. Verified: `app.json` of both zips is identical to the user's exports apart from internal ids; only the YAML line wrapping of the connector schema differs.
+  - **A tool's description is taken from the docstring of its Python code, not from the description field of the tool JSON.** `optimize_descriptions.py` therefore rewrites both. Our first package changed only the JSON, and an export showed the old lengths.
+  - Importing the generated zip into the console repeated a "network error" for the user (cause not found; the layout equals the earlier zip). The proven route is to copy the working app and paste `console/` files.
+- **Field** `Chat_Conversation__c.Voice_Agent_Name__c` (Text 80). Written by the agent's save tool, so it is in the permission set `Voice_Agent_Chat_Conversation_Writer`.
+- **`TokenComparisonController.load(agent, maxBars)`** (`with sharing`, `USER_MODE`): returns the latest N calls whose `Actual_Tokens_Status__c = 'Done'` (oldest first), the per-agent averages over all calls (grouped by `Voice_Agent_Name__c`, empty = `Unlabelled`) and `percentFewer` = (Baseline average - Optimized average) / Baseline average when both exist. The agent filter value is bound, never concatenated. Tests run as a user holding the three permission sets.
+- **Component** `tokenComparisonDashboard`: a plain section (no extra card) with a bar chart made of HTML and CSS (an earlier SVG version scaled to the full page width and looked far too big), filters (agent, latest 10/30/60/100 calls, total or breakdown), KPI-style tiles and the percent box. It is placed at the bottom of `chatAnalyticsDashboard`. An earlier separate tab `Token_Comparison` was deleted from the org.
+- **Permission set** `Token_Comparison_Access`: read-only on `Chat_Conversation__c`, the `Actual_*` fields and `Voice_Agent_Name__c`, and class access to the controller. Whoever opens the dashboard needs it, otherwise only the new section shows an error.
 
 ## B7. Deploy order that worked (serviceOrg, all with the user's approval)
 1. Check-only deploy of the fields and the custom metadata type, then real deploy (no tests).
@@ -252,6 +278,10 @@ Two more branches start from the same Closed transcript:
 | 14 | Cases, deploy | `ContentDocumentLinkTrigger` failed: `Variable does not exist: ResumeQueueHandler` | deploying the whole `triggers` folder swept in an unrelated trigger | deploy named files only |
 | 15 | Cases, retrieve | 27 unrelated flexipages landed in the repo | a retrieve into the project | removed them; retrieve into a scratch project outside the repo |
 | 16 | Chat Analytics (pre-existing code, found by reading it) | Agentforce action fails with `UNKNOWN_EXCEPTION` | the action cannot run after uncommitted DML in the same transaction | the existing code claims the record in one transaction and calls the agent in the next job |
+| 17 | Optimized package | After import or paste the tool descriptions are still the long ones | The console builds a Python tool's description from the docstring of its code, not from the JSON description field | Change the docstring too (`optimize_descriptions.py`); verify with an export |
+| 18 | Skill template | `variable_fields` cannot send a text value | It rounds every value to a whole number | Use `fixed_values` for a constant label such as `Voice_Agent_Name__c` |
+| 19 | Dashboard | The first chart was far too big next to the existing boxes | An SVG with a fixed viewBox scales to the page width, text and height included | HTML and CSS bars with a fixed small height |
+| 20 | Console | Importing the generated zip repeats "network error" | Not found | See B6d: look at the failing request in the Network tab, or paste the `console/` files into a copy of the app |
 
 ## B10. Decisions (26 Nov unless noted)
 | Decision | Why |
@@ -271,6 +301,9 @@ Two more branches start from the same Closed transcript:
 | Case creation fires from a trigger when the transcript is Closed with text, through a queueable | runs as the saving user, is covered by tests, needs no activation step; the prompt call cannot run inside the trigger transaction |
 | Category read live from the picklist; unknown becomes Other; lookup on the Case only; `Is_Classified__c` never set | the user's answers to the five Case questions |
 | Chat Analytics left exactly as it is (nightly job, Agentforce agent, dashboard) | it existed before; the token and Case work only add their own fields, jobs and triggers |
+| Compare two agents with a fixed label in each save tool (26 Nov; the user first chose a variable, which the template cannot do for text) | no change to the logs or the lookup; works for any number of agents |
+| Optimize instructions and tool descriptions, not guardrails | the guardrails are the two defaults; the guardrail model's tokens cannot be read anyway |
+| Put the comparison inside the existing Chat Analytics Dashboard, no separate tab | the user's wish; plain HTML bars instead of SVG so it matches the small existing boxes |
 | Do not edit the Cases trigger / permission set or the voice agent | other workstreams; no agent changes before manager approval |
 | Nothing committed or pushed | the user's rule: only on request |
 

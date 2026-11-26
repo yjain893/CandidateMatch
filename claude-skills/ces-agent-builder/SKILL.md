@@ -90,4 +90,4 @@ Inspect it (`validate_package.py <path> --inspect`), copy its instructions and t
 ## Style of your messages to the user
 Plain words, short. Lead with what you need or what happened. Tables for tools, variables and guardrails. Say plainly what is untested.
 
-- Token counts per call: offer the `token_count_input` / `token_count_output` callbacks (estimates, `references/token-estimates.md`); exact numbers only come from Cloud Logging.
+- Token counts per call: **prefer the exact method** (Cloud Logging read by Salesforce, see the banner of `references/token-estimates.md`); the `token_count_input` / `token_count_output` callbacks (estimates, `references/token-estimates.md`) are superseded. Exact numbers only come from Cloud Logging.
