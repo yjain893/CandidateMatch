@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtlClntAppGlobalOauthSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <callbackUrl>https://unused-callback.salesforce.local</callbackUrl>
+    <certificate>MIICujCCAaICCQCRY2w4XafE6zANBgkqhkiG9w0BAQsFADAfMR0wGwYDVQQDDBRT
+YWxlc2ZvcmNlQXV0b21hdGlvbjAeFw0yNjA3MjAwNTI0MjhaFw0zNjA3MTcwNTI0
+MjhaMB8xHTAbBgNVBAMMFFNhbGVzZm9yY2VBdXRvbWF0aW9uMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEA09NfJMkVGBeMVPaZCDEkXmhlsz84BR0V2/r+
+mfY1PAQv0gsvSBnugFcIQQyqWAZxo8J6O0zEcDjM16zbixSGQIINDjsKdmX28Q2Y
+HgQkzfNvpsDEe4t8vQkMAGIQohQmKluzcApjAQzv6psSX3incJKyC4Rv8IhQwgK/
+hyefQUr7RGODyM3D7nmVSw7ltTpN3S9ZahzPzs4hNUB58wUBkW+/YtiRZNeAzv8r
+bc6Gb1KUYhfHyWyETQE8mKBcbR/1hGLNulSCjhfxDC7v+6I0ONRidPaa1QAGZmxX
+jhYlTSkKlVIGTpB+yH9G0yI4S5i/6aL/5ovKi4No5fkmk4/UMwIDAQABMA0GCSqG
+SIb3DQEBCwUAA4IBAQCS1mwOKDf0cupce/bS8ZeOgIFQ0bpcM9MLSIokj3XKJWEE
+sAWMm8fA2CviGiy5vecQ/5p3AOXlD+tpmJVH0SJc/PylGaKItR0mZP/ulyby3kVo
+ILrtThyCdz1QYV1bp9RuwNjUuUqjuRKL6DuitSN50RaqhPonWSwD2sRbxSu7a8m4
+wltwVKrk4TJKAQd+6oxuoG4eAnBBwWYP+LJqemR72OKl9AZgi6MGn7exNwqft2Uf
+PGOv0LO90bxfsV038VAFJ3iZoPFRsSnDIAgvVe5L6pokjs5SvHqJ6r+m1QW4VdJ9
+trsFy9/QMlkjktrYkP495aFWEoUAayo0JmwM8fFp</certificate>
+    <consumerKey>3MVG9gl7ph1Px3YbOBXbJBfrZ3OmFhE8hKbo58cdGphbzFXe2EryUwgsEuklxKyXKDPZf3_qQQPBVIuHNy8FS</consumerKey>
+    <externalClientApplication>CRT_Automation</externalClientApplication>
+    <isClientCredentialsFlowEnabled>true</isClientCredentialsFlowEnabled>
+    <isCodeCredFlowEnabled>false</isCodeCredFlowEnabled>
+    <isCodeCredPostOnly>false</isCodeCredPostOnly>
+    <isConsumerSecretOptional>true</isConsumerSecretOptional>
+    <isDPopEnabled>false</isDPopEnabled>
+    <isDeviceFlowEnabled>false</isDeviceFlowEnabled>
+    <isEnforceRefreshTokenTTL>true</isEnforceRefreshTokenTTL>
+    <isIntrospectAllTokens>false</isIntrospectAllTokens>
+    <isMtlsEnabled>false</isMtlsEnabled>
+    <isNamedUserJwtEnabled>false</isNamedUserJwtEnabled>
+    <isPkceRequired>true</isPkceRequired>
+    <isRefreshTokenRotationEnabled>true</isRefreshTokenRotationEnabled>
+    <isSecretRequiredForRefreshToken>false</isSecretRequiredForRefreshToken>
+    <isSecretRequiredForTokenExchange>true</isSecretRequiredForTokenExchange>
+    <isTokenExchangeEnabled>false</isTokenExchangeEnabled>
+    <label>CRT_Automation_glbloauth</label>
+    <shouldRotateConsumerKey>false</shouldRotateConsumerKey>
+    <shouldRotateConsumerSecret>false</shouldRotateConsumerSecret>
+</ExtlClntAppGlobalOauthSettings>
