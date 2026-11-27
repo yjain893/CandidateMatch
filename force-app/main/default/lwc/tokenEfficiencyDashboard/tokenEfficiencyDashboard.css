@@ -1,0 +1,35 @@
+:host { --border:#dde3ea; --ink:#172b4d; --muted:#5f6b7a; }
+.wrap { border-top: 1px solid var(--border); padding-top: .25rem; margin-top: .5rem; }
+h2 { font-size: 1rem; font-weight: 700; margin: .75rem 0 .25rem; }
+h3 { font-size: .85rem; font-weight: 700; margin: 1rem 0 .4rem; color: var(--ink); }
+.subtitle { color: var(--muted); font-size: .8rem; margin-bottom: .5rem; }
+.filters { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: .6rem; }
+.filters lightning-combobox { min-width: 12rem; }
+.err { font-size: .8rem; margin: .4rem 0; }
+.headline { border: 1px solid #2e844a; background: #eef8f1; border-radius: .45rem; padding: .8rem 1rem; margin: .4rem 0; }
+.headline.bad { border-color: #ba0517; background: #fdf1f1; }
+.headline.neutral { border-color: var(--border); background: #f7f9fb; }
+.headline-main { font-size: 1.8rem; font-weight: 700; color: var(--ink); }
+.headline-sub { font-size: .85rem; color: var(--muted); margin-top: .15rem; }
+.headline-warn { font-size: .8rem; color: #8a5a00; margin-top: .4rem; }
+.legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .72rem; color: var(--muted); margin-bottom: .3rem; }
+.legend-item { display: inline-flex; align-items: center; }
+.dot { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; margin-right: .35rem; }
+.barrow, .dotrow { display: flex; align-items: center; gap: .6rem; margin: .35rem 0; }
+.barname { width: 8rem; flex: none; font-size: .8rem; font-weight: 600; color: var(--ink); }
+.barname small { display: block; font-weight: 400; font-size: .68rem; color: var(--muted); }
+.bartrack { flex: 1; height: 1.4rem; background: #eef1f4; border-radius: .3rem; overflow: hidden; }
+.barfill { height: 100%; display: flex; }
+.barvalue { width: 4.5rem; flex: none; font-size: .9rem; font-weight: 700; text-align: right; }
+.fair { font-size: .8rem; color: var(--ink); }
+.fairitem { margin-right: 1.2rem; }
+.fairok { color: #2e844a; margin-top: .2rem; }
+.fairwarn { color: #8a5a00; margin-top: .2rem; }
+.dottrack { position: relative; flex: 1; height: 1.6rem; background: #f4f6f8; border-radius: .3rem; }
+.pt { position: absolute; top: 50%; width: .7rem; height: .7rem; margin: -.35rem 0 0 -.35rem; border-radius: 50%; background: #5f6b7a; opacity: .85; }
+.dottrack .pt:hover { opacity: 1; transform: scale(1.3); }
+.avgmark { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; background: #172b4d; }
+.axis { position: relative; flex: 1; height: 1rem; }
+.axis span { position: absolute; transform: translateX(-50%); font-size: .65rem; color: var(--muted); }
+.hint { font-size: .7rem; color: var(--muted); margin-top: .3rem; }
+.empty { color: var(--muted); font-size: .85rem; padding: .5rem 0; }

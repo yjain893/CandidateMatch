@@ -1,0 +1,80 @@
+<template>
+  <section class="wrap">
+    <h2>Token Efficiency: Baseline vs Optimized</h2>
+    <div class="subtitle">How many real tokens one call uses, per voice agent. Only calls whose numbers are saved are counted.</div>
+
+    <div class="filters">
+      <lightning-combobox name="perAgent" label="Latest calls per agent" value={perAgent} options={countOptions} onchange={handleCount}></lightning-combobox>
+      <lightning-input type="checkbox" label="Include calls with no agent label" checked={includeUnlabelled} onchange={handleUnlabelled}></lightning-input>
+      <lightning-button-icon icon-name="utility:refresh" alternative-text="Refresh" title="Refresh" onclick={handleRefresh}></lightning-button-icon>
+    </div>
+
+    <template if:true={error}>
+      <div class="slds-text-color_error err">{errorMessage}</div>
+    </template>
+
+    <template if:true={hasAgents}>
+      <template if:true={hasComparison}>
+        <div class={headlineClass}>
+          <div class="headline-main">{headlineText}</div>
+          <div class="headline-sub">{headlineSub}</div>
+          <template if:true={fewCalls}>
+            <div class="headline-warn">Too few calls to trust this yet: use at least 3 calls per agent, and the same script on both.</div>
+          </template>
+        </div>
+      </template>
+      <template if:false={hasComparison}>
+        <div class="headline neutral">
+          <div class="headline-main">Waiting for both agents</div>
+          <div class="headline-sub">The comparison appears when there are saved calls for an agent called Baseline and one called Optimized.</div>
+        </div>
+      </template>
+
+      <h3>Average tokens per call, and what they are made of</h3>
+      <div class="legend">
+        <template for:each={legend} for:item="l">
+          <span key={l.label} class="legend-item"><span class="dot" style={l.style}></span>{l.label}</span>
+        </template>
+      </div>
+      <template for:each={agentBars} for:item="a">
+        <div key={a.agent} class="barrow">
+          <div class="barname">{a.agent}<small>{a.calls} calls</small></div>
+          <div class="bartrack"><div class="barfill" style={a.fillStyle}>
+            <template for:each={a.segments} for:item="seg"><div key={seg.key} style={seg.style} title={seg.tip}></div></template>
+          </div></div>
+          <div class="barvalue">{a.avgTotal}</div>
+        </div>
+      </template>
+
+      <h3>Are the calls comparable?</h3>
+      <div class="fair">
+        <template for:each={agentBars} for:item="a">
+          <span key={a.agent} class="fairitem"><b>{a.agent}</b>: {a.avgTurns} caller turns per call</span>
+        </template>
+        <template if:true={turnsDiffer}><div class="fairwarn">The conversations are not the same length, so the comparison is not fully fair.</div></template>
+        <template if:false={turnsDiffer}><div class="fairok">Same length on average: the comparison is fair.</div></template>
+      </div>
+
+      <h3>Every call (one dot per call, the bar is the average)</h3>
+      <template for:each={dotRows} for:item="row">
+        <div key={row.agent} class="dotrow">
+          <div class="barname">{row.agent}<small>{row.range}</small></div>
+          <div class="dottrack">
+            <template for:each={row.dots} for:item="d"><span key={d.key} class="pt" style={d.style} title={d.tip}></span></template>
+            <span class="avgmark" style={row.avgStyle} title={row.avgTip}></span>
+          </div>
+        </div>
+      </template>
+      <div class="dotrow"><div class="barname"></div>
+        <div class="axis">
+          <template for:each={axis} for:item="t"><span key={t.key} style={t.style}>{t.label}</span></template>
+        </div>
+      </div>
+      <div class="hint">Hover a dot to see the call and its numbers. Fewer tokens is better (further left).</div>
+    </template>
+
+    <template if:false={hasAgents}>
+      <div class="empty">No calls with saved token numbers yet.</div>
+    </template>
+  </section>
+</template>

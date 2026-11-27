@@ -32,6 +32,7 @@
     <classAccesses><apexClass>TokenActualsQueueable</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>TokenActualsScheduler</apexClass><enabled>true</enabled></classAccesses>
     <classAccesses><apexClass>TokenComparisonController</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>TokenEfficiencyController</apexClass><enabled>true</enabled></classAccesses>
     <externalCredentialPrincipalAccesses> <enabled>true</enabled> <externalCredentialPrincipal>Google_Logging-Reader</externalCredentialPrincipal> </externalCredentialPrincipalAccesses>
     <userPermissions><enabled>true</enabled><name>ApiEnabled</name></userPermissions>
 </PermissionSet>
